@@ -1,0 +1,21 @@
+$ Get-CimInstance Win32_ComputerSystem | Select TotalPhysicalMemory, NumberOfLogicalProcessors, Model
+TotalPhysicalMemory       : 33622650880          # = 31.3 GiB
+NumberOfLogicalProcessors : 12
+Model                     : HP EliteBook 845 G8 Notebook PC
+
+$ Get-CimInstance Win32_Processor | Select Name, NumberOfCores, NumberOfLogicalProcessors
+AMD Ryzen 5 PRO 5650U with Radeon Graphics      cores=6 logical=12
+
+$ Get-CimInstance Win32_VideoController | Select Name, DriverVersion, VideoModeDescription
+{"Name":"AMD Radeon(TM) Graphics","DriverVersion":"31.0.21924.61","VideoModeDescription":"1920 x 1080 x 4294967296 colors"}
+
+$ Get-PSDrive -PSProvider FileSystem
+C: free=31,4GB used=444,6GB
+# NOTE: PowerShell is using a comma as the decimal separator on this locale.
+# Free space is 31.4 GB, not 314 GB. This is the binding resource constraint (GAPS G-002).
+
+SUMMARY
+  CPU    AMD Ryzen 5 PRO 5650U, 6 physical cores / 12 threads, Zen 3, 15-25 W mobile envelope
+  RAM    31.3 GiB
+  GPU    AMD Radeon integrated (Vega class) -- no CUDA
+  Disk   31.4 GB free on C:

@@ -1,0 +1,26 @@
+PRIMARY EVIDENCE FOR DECISION D-004 AND GAP G-001
+=================================================
+
+$ nvidia-smi
+nvidia-smi : The term 'nvidia-smi' is not recognized as the name of a cmdlet, function, script
+file, or operable program.
+    + CategoryInfo          : ObjectNotFound: (nvidia-smi:String) [], CommandNotFoundException
+
+$ Get-CimInstance Win32_VideoController | Select Name, DriverVersion
+{"Name":"AMD Radeon(TM) Graphics","DriverVersion":"31.0.21924.61"}
+
+# Inside the container, after D-008:
+$ python -c "import torch; print(torch.cuda.is_available())"
+False
+
+CONCLUSION
+  The only GPU is the Ryzen 5650U's integrated AMD Radeon (Vega class). There is no NVIDIA
+  device and therefore no CUDA. ROCm has no Windows support for this class of iGPU either.
+
+CONSEQUENCES
+  * Triton (Project 5) cannot be compiled or benchmarked on this machine. The kernel is authored
+    here and executed on an external free GPU runtime; until it has actually run, the project
+    page states "authored, not yet executed" and publishes no timings. (D-004)
+  * All training for all eight projects is CPU training. Scale is bounded by wall clock.
+  * Any GPU performance claim anywhere in this portfolio must name the external hardware it was
+    measured on. None may be attributed to this laptop.

@@ -1,0 +1,11 @@
+# Pinned dependency set. Resolved 2026-09-15 by pip 25.0.1 on Python 3.12.10.
+#
+# The CPU wheel index is deliberate (decision D-001): the default index would pull ~2 GB of
+# CUDA libraries that cannot be used on this machine, against a 31.4 GB disk budget.
+--index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://pypi.org/simple
+
+torch==2.14.0+cpu
+numpy==2.5.3
+pytest==9.1.1
+matplotlib==3.11.2

@@ -1,0 +1,59 @@
+PRIMARY EVIDENCE FOR DECISION D-008
+===================================
+PyTorch installs correctly on the Windows host but cannot be imported. The cause is a host
+security policy, not a broken installation.
+
+--------------------------------------------------------------------------------------------
+STEP 1 -- install succeeds
+--------------------------------------------------------------------------------------------
+$ .venv\Scripts\python.exe -m pip install -r requirements-in.txt
+Looking in indexes: https://download.pytorch.org/whl/cpu, https://pypi.org/simple
+  Downloading .../cpu/torch-2.14.0%2Bcpu-cp312-cp312-win_amd64.whl (124.0 MB)
+Successfully installed ... numpy-2.5.3 ... torch-2.14.0+cpu ...
+
+--------------------------------------------------------------------------------------------
+STEP 2 -- numpy imports fine (its binaries are signed / judged reputable)
+--------------------------------------------------------------------------------------------
+$ .venv\Scripts\python.exe -c "import numpy;print('numpy ok',numpy.__version__)"
+numpy ok 2.5.3
+
+--------------------------------------------------------------------------------------------
+STEP 3 -- torch does not
+--------------------------------------------------------------------------------------------
+$ .venv\Scripts\python.exe -c "import torch;print(torch.__version__)"
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "C:\Users\titus\Music\projects\.venv\Lib\site-packages\torch\__init__.py", line 309, in <module>
+    _load_dll_libraries()
+  File "C:\Users\titus\Music\projects\.venv\Lib\site-packages\torch\__init__.py", line 292, in _load_dll_libraries
+    raise err
+OSError: [WinError 4551] An Application Control policy has blocked this file.
+Error loading "C:\Users\titus\Music\projects\.venv\Lib\site-packages\torch\lib\shm.dll"
+or one of its dependencies.
+
+--------------------------------------------------------------------------------------------
+STEP 4 -- root cause: Smart App Control is ON and enforcing
+--------------------------------------------------------------------------------------------
+$ Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy'
+EmodePolicyRequired                   : 0
+SkuPolicyRequired                     : 0
+VerifiedAndReputablePolicyState       : 1     <-- 1 = Smart App Control ENABLED / enforcing
+SAC_EnforcementReason                 : 3
+SAC_PreviousState                     : 0
+VerifiedAndReputableIgnoreAutoOptOut  : 1
+
+Interpretation: Smart App Control refuses to load binaries it does not judge
+verified-and-reputable. PyTorch's Windows wheels ship unsigned DLLs (torch\lib\shm.dll among
+them), so the loader is blocked. Reinstalling, changing wheel versions, or using conda does not
+change this -- the policy is about code signing, not about the package.
+
+--------------------------------------------------------------------------------------------
+STEP 5 -- the escape route, verified
+--------------------------------------------------------------------------------------------
+Smart App Control governs Windows PE binaries. Linux ELF binaries executing inside the WSL2 VM
+are outside its scope, and Docker Desktop is already installed and running.
+
+$ docker run --rm -v <repo>:/work -w /work ml-labs:cpu python -c "import torch;print(...)"
+TORCH_OK 2.14.0+cpu
+
+Host security posture unchanged. Smart App Control remains enabled.

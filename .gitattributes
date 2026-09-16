@@ -1,0 +1,16 @@
+# Normalise line endings so the repo is identical whether checked out on Windows (development
+# host) or Linux (the container that actually runs everything, decision D-008). Without this,
+# every file shows as modified depending on which side last touched it.
+* text=auto eol=lf
+
+# run.cmd is executed by Windows cmd.exe, which is the one place CRLF is genuinely wanted.
+*.cmd text eol=crlf
+
+# Binary artefacts: never touch these. Demo weight files are shipped as raw little-endian
+# float32 and a single injected CR would silently corrupt a model.
+*.bin binary
+*.pt binary
+*.pth binary
+*.onnx binary
+*.npy binary
+*.png binary

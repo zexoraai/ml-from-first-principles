@@ -1,0 +1,41 @@
+# Environment
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Scratch command output at the repo root. Anything worth keeping is copied into evidence/
+# first; these patterns are root-anchored so evidence/**/*.txt is unaffected.
+/*.log
+/bench*.txt
+/diag*.txt
+/t[0-9].txt
+/ga.txt
+/gs.txt
+/d[0-9].txt
+/env_probe.txt
+/tools_probe.txt
+/pips.txt
+/npmv.txt
+/gh.txt
+/ep.txt
+/cpu.txt
+/dps.txt
+/vcheck.txt
+/v[0-9].txt
+
+# Datasets: never committed. Each project documents how to regenerate/download.
+data/
+
+# Large run artefacts. Checkpoints referenced by EXPERIMENTS.md are committed ONLY if small
+# (< 5 MB) and needed by a demo; otherwise they stay local and the record holds the sha256.
+runs/
+*.pt
+*.pth
+!docs/**/*.bin
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store

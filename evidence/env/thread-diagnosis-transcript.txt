@@ -1,0 +1,60 @@
+Transcript: scripts/diag_threads.py  (2026-09-15, containerised)
+Purpose: find out why small PyTorch ops appeared implausibly slow in run env-bench-01.
+Machine state: CONTENDED (37 unrelated containers running; see GAPS G-008). Treat all timings
+               as lower bounds.
+
+==============================================================================
+CPU / CGROUP FACTS
+==============================================================================
+  os.cpu_count                     12
+  len(os.sched_getaffinity)        12
+  torch.get_num_threads            6
+  torch.get_num_interop_threads    12
+  OMP_NUM_THREADS                  6
+  cgroup_v2_cpu.max                max 100000      <-- no Docker CPU quota
+  cgroup_v1_quota_us               unavailable (FileNotFoundError)
+  cgroup_v1_period_us              unavailable (FileNotFoundError)
+  nproc                            6
+==============================================================================
+MATMUL: per-call time vs thread count, with amortised timing
+==============================================================================
+  size      1thr(ms)    2thr(ms)    4thr(ms)    6thr(ms)
+  128          0.104       0.076       0.092       0.099
+  512          5.758       4.058       3.746       2.453
+  2048       294.435     174.037     175.882      95.762
+
+  GFLOP/s for the same measurements
+  size      1thr(GF)    2thr(GF)    4thr(GF)    6thr(GF)
+  128           40.5        55.5        45.8        42.5
+  512           46.6        66.2        71.7       109.4
+  2048          58.3        98.7        97.7       179.4
+==============================================================================
+TINY TRAINING STEP vs thread count  (2 layers, d_model=128, batch=32, seq_len=32)
+==============================================================================
+  threads=1     120.55 ms/step        8494 tok/s   (inner=5)
+  threads=2     100.45 ms/step       10194 tok/s   (inner=12)
+  threads=4     112.20 ms/step        9127 tok/s   (inner=7)
+  threads=6     167.33 ms/step        6120 tok/s   (inner=2)
+==============================================================================
+VERDICT
+==============================================================================
+  128x128 matmul: 1 thread     103.5 us   6 threads      98.7 us   ratio   0.95x
+  -> H2 CONFIRMED: the earlier floor was a measurement artefact; amortised timing fixes it.
+  fastest training step at threads=2: 100.4 ms
+  written to evidence/env/thread_diagnosis.json
+
+------------------------------------------------------------------------------
+WHAT THIS ESTABLISHED
+------------------------------------------------------------------------------
+1. env-bench-01's numbers were produced by a faulty harness, not by slow hardware. Timing a
+   single call per sample carried a large fixed entry cost (consistent with PyTorch's intra-op
+   thread pool parking between calls and being rewoken under a hypervisor). Amortising many
+   calls inside one timed region removed it:
+       128x128 matmul   31.68 ms  ->   0.104 ms   (~300x)
+       2048x2048        252.2 ms  ->  95.76 ms    (68 -> 179 GFLOP/s)
+       0.53M step       4979.7 ms -> 100.45 ms    (~50x)
+2. Docker imposes no CPU quota (`cpu.max = max 100000`), so the container is not being throttled.
+3. Thread count is workload-dependent, and this held in every run:
+       small ops / small models  -> 2 threads is best; 6 threads is actively harmful
+       large matmuls             -> scales to 6 threads (179 GFLOP/s at 2048^2)
+   Project 1's training loop therefore pins 2 threads, not 6.

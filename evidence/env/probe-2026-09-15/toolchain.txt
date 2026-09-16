@@ -1,0 +1,49 @@
+$ python --version
+Python 3.12.10
+$ python -c "import sys; print(sys.executable)"
+C:\Users\titus\AppData\Local\Programs\Python\Python312\python.exe
+
+$ python -m pip --version
+pip 25.0.1 from C:\Users\titus\AppData\Local\Programs\Python\Python312\Lib\site-packages\pip (python 3.12)
+
+$ git --version
+git version 2.53.0.windows.1
+
+$ node --version
+v24.13.0
+
+$ npm --version
+npm : File C:\Program Files\nodejs\npm.ps1 cannot be loaded because running scripts is disabled
+on this system. ... FullyQualifiedErrorId : UnauthorizedAccess
+# PowerShell execution policy is Restricted. Consequences:
+#   * npm must be invoked as `npm.cmd`
+#   * the venv's Activate.ps1 cannot run -> call .venv\Scripts\python.exe by absolute path
+#   * project helper scripts must be .cmd, not .ps1  (hence run.cmd)
+
+$ npm.cmd --version
+11.6.2
+
+$ python -m pip list          # system Python, before any project setup
+Package             Version
+attrs               26.1.0
+boto3               1.43.73
+botocore            1.43.73
+hypothesis          6.140.3
+jmespath            1.1.0
+pglast              8.4
+pip                 25.0.1
+python-dateutil     2.9.0.post0
+s3transfer          0.19.2
+six                 1.17.0
+sortedcontainers    2.4.0
+urllib3             2.7.0
+# No torch. No numpy. Clean slate for ML work.
+
+$ gh auth status
+github.com
+  - Logged in to github.com account zexoraai (keyring)
+  - Active account: true
+  - Git operations protocol: https
+  - Token: gho_************************************
+  - Token scopes: 'gist', 'read:org', 'repo', 'workflow'
+# repo + workflow scopes => a public GitHub Pages site is achievable (decision D-002).
