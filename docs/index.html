@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ML from first principles — eight papers, implemented and verified</title>
+<meta name="description" content="Eight foundational machine learning papers implemented from their equations, verified against independent oracles, and documented with reproducible evidence. Honest fidelity labelling: no reproduction is claimed that was not achieved.">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="masthead">
+  <div class="wrap masthead-inner">
+    <a class="brand" href="./">ml-from-first-principles<span class="brand-dim">/</span></a>
+    <nav class="top" aria-label="Primary">
+      <ul>
+        <li><a href="./" aria-current="page">Projects</a></li>
+        <li><a href="environment.html">Environment&nbsp;&amp;&nbsp;method</a></li>
+        <li><a href="https://github.com/zexoraai/ml-from-first-principles">Source</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap">
+
+    <div class="hero">
+      <h1>Eight papers, implemented from the equations.</h1>
+      <p class="lede">
+        Attention, GPT, LoRA, DPO, tiled attention, quantization, CLIP and DDPM — each built by
+        hand, checked against independent oracles, and documented so the claims can be audited
+        rather than taken on trust.
+      </p>
+      <p class="lede">
+        Every artefact carries a fidelity tier. <strong>Nothing here claims to reproduce a
+        published result</strong>, because on the hardware described in
+        <a href="environment.html">Environment&nbsp;&amp;&nbsp;method</a> that is not achievable —
+        and saying so is more useful than implying otherwise.
+      </p>
+    </div>
+
+    <section aria-labelledby="tiers-h">
+      <h2 id="tiers-h">How to read the labels</h2>
+      <p>
+        One vocabulary, applied to everything. It exists to prevent the most common portfolio
+        overclaim: implementing a mechanism and describing it as reproducing a paper.
+      </p>
+      <div class="table-scroll">
+        <table>
+          <caption>Fidelity tiers. Every project page states which tier each of its claims sits at.</caption>
+          <thead>
+            <tr><th scope="col">Tier</th><th scope="col">Means</th><th scope="col">The claim it licenses</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="pill pill--tier-e">Tier E</span></td>
+              <td>Mechanism implemented from the paper's equations and verified for correctness — numerical parity against an independent reference, gradient checks, structural invariants.</td>
+              <td>“I implemented and verified mechanism X.”</td>
+            </tr>
+            <tr>
+              <td><span class="pill pill--tier-r">Tier R</span></td>
+              <td>Reduced-scale reproduction. The full method runs end to end on real data, far below the paper's scale. Trends may be compared qualitatively; absolute numbers may not.</td>
+              <td>“At a fraction of the scale, the method behaves qualitatively as reported.”</td>
+            </tr>
+            <tr>
+              <td><span class="pill pill--tier-p">Tier P</span></td>
+              <td>Reproduction of published results: same dataset, same scale, metric within published error bars.</td>
+              <td>“I reproduced the published result.” <strong>Not claimed anywhere in this portfolio.</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="projects-h">
+      <h2 id="projects-h">The eight projects</h2>
+      <p class="muted small">
+        Status reflects what has actually been built and run, updated as work lands. Projects are
+        built in dependency order: 1&nbsp;→&nbsp;2 produce a base model that 3&nbsp;→&nbsp;4
+        adapt and align; 5 optimises the attention primitive; 6 compresses; 7 and 8 are
+        independent architectures reusing the shared training and evidence infrastructure.
+      </p>
+
+      <div class="grid">
+
+        <article class="card card--linked">
+          <div class="card-top">
+            <span class="card-num">01</span>
+            <span class="pill pill--wip">mechanisms verified</span>
+          </div>
+          <h3>Encoder–decoder Transformer</h3>
+          <p>
+            Multi-head attention, sinusoidal positional encoding, layer normalization, residual
+            wiring, position-wise feed-forward, padding and causal masks — all hand-written. No
+            <code>nn.Transformer</code>, and that is enforced by a test, not a promise.
+          </p>
+          <p class="card-src">Vaswani et al. · <a href="https://arxiv.org/abs/1706.03762">arXiv:1706.03762v7</a></p>
+          <div class="card-meta">
+            <span class="pill pill--tier-e">Tier E</span>
+            <span class="pill">79 tests passing</span>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-top">
+            <span class="card-num">02</span>
+            <span class="pill pill--todo">not started</span>
+          </div>
+          <h3>Decoder-only GPT</h3>
+          <p>
+            Next-token training, sampling with temperature and top-<i>k</i>, resumable
+            checkpointing. A small model first; the ~124M configuration is treated as a separate
+            target with a measured cost estimate attached.
+          </p>
+          <p class="card-src">GPT-2 · nanoGPT · llm.c</p>
+          <div class="card-meta"><span class="pill pill--tier-r">Tier R planned</span></div>
+        </article>
+
+        <article class="card">
+          <div class="card-top">
+            <span class="card-num">03</span>
+            <span class="pill pill--todo">not started</span>
+          </div>
+          <h3>LoRA from scratch</h3>
+          <p>
+            Low-rank adapters, <code>α/r</code> scaling, frozen base weights, and adapter merging.
+            Compared against full fine-tuning of the <em>same</em> model — at a size where full
+            fine-tuning genuinely runs, so the comparison is real.
+          </p>
+          <p class="card-src">Hu et al. · <a href="https://arxiv.org/abs/2106.09685">arXiv:2106.09685</a></p>
+          <div class="card-meta"><span class="pill pill--tier-e">Tier E planned</span></div>
+        </article>
+
+        <article class="card">
+          <div class="card-top">
+            <span class="card-num">04</span>
+            <span class="pill pill--todo">not started</span>
+          </div>
+          <h3>DPO versus SFT</h3>
+          <p>
+            The DPO objective, reference-policy handling, sequence log-probabilities under
+            response-only masking. Both arms start from the same SFT checkpoint; evaluation
+            prompts stay disjoint from training data.
+          </p>
+          <p class="card-src">Rafailov et al. · <a href="https://arxiv.org/abs/2305.18290">arXiv:2305.18290</a></p>
+          <div class="card-meta"><span class="pill pill--tier-e">Tier E planned</span></div>
+        </article>
+
+        <article class="card">
+          <div class="card-top">
+            <span class="card-num">05</span>
+            <span class="pill pill--blocked">needs a GPU</span>
+          </div>
+          <h3>Tiled attention → Triton</h3>
+          <p>
+            Reference attention, then tiled attention with online softmax, then a Triton kernel.
+            The first two run and are measured here. The kernel is authored here but
+            <strong>cannot be executed</strong> — there is no CUDA device — so no timings for it
+            will be published until it actually runs.
+          </p>
+          <p class="card-src">Dao et al. <a href="https://arxiv.org/abs/2205.14135">arXiv:2205.14135</a> · Milakov &amp; Gimelshein <a href="https://arxiv.org/abs/1805.02867">arXiv:1805.02867</a></p>
+          <div class="card-meta"><span class="pill pill--tier-e">Tier E planned</span></div>
+        </article>
+
+        <article class="card">
+          <div class="card-top">
+            <span class="card-num">06</span>
+            <span class="pill pill--todo">not started</span>
+          </div>
+          <h3>Post-training quantization</h3>
+          <p>
+            An INT8 affine baseline, then one named PTQ method implemented faithfully. Careful to
+            separate <em>simulated</em> quantization from <em>packed low-bit storage</em> from
+            actual <em>low-bit compute</em> — three different claims that often get conflated.
+          </p>
+          <p class="card-src">GPTQ / AWQ — method selected after measuring cost</p>
+          <div class="card-meta"><span class="pill pill--tier-e">Tier E planned</span></div>
+        </article>
+
+        <article class="card">
+          <div class="card-top">
+            <span class="card-num">07</span>
+            <span class="pill pill--todo">not started</span>
+          </div>
+          <h3>Miniature CLIP</h3>
+          <p>
+            Dual encoders, L2-normalised embeddings, a learned temperature, symmetric contrastive
+            loss. Trained from scratch at miniature scale, with recall@K on a documented split and
+            an explanation of why that differs from adapting pretrained encoders.
+          </p>
+          <p class="card-src">Radford et al. · <a href="https://arxiv.org/abs/2103.00020">arXiv:2103.00020</a></p>
+          <div class="card-meta"><span class="pill pill--tier-e">Tier E planned</span></div>
+        </article>
+
+        <article class="card">
+          <div class="card-top">
+            <span class="card-num">08</span>
+            <span class="pill pill--todo">not started</span>
+          </div>
+          <h3>Unconditional DDPM</h3>
+          <p>
+            Closed-form forward noising, timestep conditioning, a U-Net denoiser, and ancestral
+            reverse sampling. Fixed-seed sample grids and checkpoint comparisons; no invented
+            quality scores.
+          </p>
+          <p class="card-src">Ho et al. · <a href="https://arxiv.org/abs/2006.11239">arXiv:2006.11239</a></p>
+          <div class="card-meta"><span class="pill pill--tier-e">Tier E planned</span></div>
+        </article>
+
+      </div>
+    </section>
+
+    <section aria-labelledby="honest-h">
+      <h2 id="honest-h">What this site will not do</h2>
+      <div class="note warn">
+        <span class="note-label">Commitments</span>
+        <ul style="margin-bottom:0">
+          <li>No fabricated metrics. Every number on every page traces to a run identifier in the <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/records/EXPERIMENTS.md">evidence register</a>, with seeds, hardware, dataset version and a reproduction command.</li>
+          <li>No animation presented as a running kernel or a trained model. Live inference, cached output, prerecorded runs and conceptual visualisations are each labelled as such.</li>
+          <li>No invented URLs. A project links to a demo only once that demo has been deployed and tested.</li>
+          <li>Failures stay published. The evidence register keeps a benchmark that was <strong>wrong by 300×</strong>, because deleting it would remove the most useful lesson in it.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section aria-labelledby="status-h">
+      <h2 id="status-h">Build status, plainly</h2>
+      <p>
+        This portfolio is under active construction and the status pills above are accurate as of
+        the last commit. Project 1's mechanisms are implemented and verified; no model has been
+        trained yet, so no demo is live yet. When a demo appears, it will run genuine model
+        weights in your browser and say so.
+      </p>
+      <p class="small muted">
+        The <a href="environment.html">Environment&nbsp;&amp;&nbsp;method</a> page is complete and
+        worth reading first — it covers the measured hardware, two blockers that reshaped the whole
+        plan, and a worked example of a benchmark that lied.
+      </p>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>
+      Built by <a href="https://github.com/zexoraai">zexoraai</a>.
+      Code MIT-licensed; datasets retain their own licences, documented per project.
+      <a href="https://github.com/zexoraai/ml-from-first-principles">Source and records on GitHub</a>.
+    </p>
+    <p class="small">
+      Papers are linked to arXiv and are the property of their authors. This portfolio implements
+      and cites them; it does not reproduce their text.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

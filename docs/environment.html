@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Environment &amp; method — ml-from-first-principles</title>
+<meta name="description" content="Measured hardware capability, the two blockers that reshaped the project plan, and a worked case study of a benchmark that was wrong by 300x.">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="masthead">
+  <div class="wrap masthead-inner">
+    <a class="brand" href="./">ml-from-first-principles<span class="brand-dim">/</span></a>
+    <nav class="top" aria-label="Primary">
+      <ul>
+        <li><a href="./">Projects</a></li>
+        <li><a href="environment.html" aria-current="page">Environment&nbsp;&amp;&nbsp;method</a></li>
+        <li><a href="https://github.com/zexoraai/ml-from-first-principles">Source</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap">
+
+    <div class="hero">
+      <h1>Environment &amp; method</h1>
+      <p class="lede">
+        What the hardware can actually do, measured rather than assumed — and three findings that
+        changed the plan for all eight projects.
+      </p>
+    </div>
+
+    <section aria-labelledby="hw-h">
+      <h2 id="hw-h">The machine</h2>
+      <dl class="stats">
+        <div class="stat"><dt>CPU</dt><dd>Ryzen 5 PRO 5650U<small>6 cores / 12 threads, 15–25&nbsp;W mobile</small></dd></div>
+        <div class="stat"><dt>GPU</dt><dd>none usable<small>integrated AMD Radeon; no CUDA device</small></dd></div>
+        <div class="stat"><dt>RAM</dt><dd>15.6 GiB<small>visible in container; host has 31.3 GiB</small></dd></div>
+        <div class="stat"><dt>Disk free</dt><dd>31.4 GB<small>the binding constraint on datasets</small></dd></div>
+        <div class="stat"><dt>Peak fp32 matmul</dt><dd>179 GFLOP/s<small>2048², 6 threads, quietest observation</small></dd></div>
+        <div class="stat"><dt>Training throughput</dt><dd>10,194 tok/s<small>0.53 M-param model, 2 threads</small></dd></div>
+      </dl>
+      <p class="small muted">
+        Measured by <code>scripts/bench_cpu.py</code> inside the pinned container. Full record:
+        <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/evidence/env/cpu_benchmark.json">cpu_benchmark.json</a>,
+        registered as <code>env-bench-02</code>.
+      </p>
+    </section>
+
+    <hr>
+
+    <section aria-labelledby="f1-h">
+      <h2 id="f1-h">Finding 1 — PyTorch could not load at all, and the obvious fix was the wrong one</h2>
+      <p>
+        <code>pip install torch</code> succeeded. <code>import torch</code> did not:
+      </p>
+<pre><code>OSError: [WinError 4551] An Application Control policy has blocked this file.
+Error loading "...\.venv\Lib\site-packages\torch\lib\shm.dll"
+or one of its dependencies.</code></pre>
+      <p>
+        Not a broken install. The host has <strong>Windows Smart App Control</strong> enabled and
+        enforcing, confirmed in the registry
+        (<code>VerifiedAndReputablePolicyState&nbsp;=&nbsp;1</code>). Smart App Control refuses to
+        load binaries it does not judge verified-and-reputable, and PyTorch's Windows wheels ship
+        unsigned DLLs. <code>numpy</code> imported fine — its binaries are signed — which is what
+        localised the cause to code signing rather than to the package.
+      </p>
+      <div class="note bad">
+        <span class="note-label">The rejected fix</span>
+        <p style="margin-bottom:0">
+          Every guide says to turn Smart App Control off. It would have worked. It was rejected on
+          two grounds: it is a machine-wide security downgrade affecting every application on the
+          machine, made to satisfy one dependency; and it is close to irreversible — historically,
+          re-enabling required resetting or reinstalling Windows, and only recent Windows builds
+          can re-enable it without a clean install. Trading that for a <code>pip install</code> is
+          a bad trade.
+        </p>
+      </div>
+      <div class="note good">
+        <span class="note-label">What was done instead</span>
+        <p style="margin-bottom:0">
+          Smart App Control governs Windows binaries, not Linux binaries running inside the WSL2
+          virtual machine — and Docker was already installed. All Python now runs in a pinned Linux
+          container. PyTorch loads normally, and <strong>the host's security configuration was
+          never touched</strong>. The constraint produced a better setup than the one originally
+          planned: a <code>Dockerfile</code> plus a per-run dependency snapshot is a far stronger
+          reproducibility record than “it worked on my laptop”.
+        </p>
+      </div>
+    </section>
+
+    <hr>
+
+    <section aria-labelledby="f2-h">
+      <h2 id="f2-h">Finding 2 — the first benchmark was wrong by 300×</h2>
+      <p>
+        Worth dwelling on, because the wrong numbers looked entirely plausible. Here is what the
+        first benchmark reported, and what was actually true:
+      </p>
+      <div class="table-scroll">
+        <table>
+          <caption>Same workloads, same machine. Only the timing harness changed.</caption>
+          <thead>
+            <tr>
+              <th scope="col">Workload</th>
+              <th scope="col">First harness</th>
+              <th scope="col">Corrected</th>
+              <th scope="col">Error</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>128² fp32 matmul</td><td class="num t-bad">31.68 ms</td><td class="num t-good">0.104 ms</td><td class="num">305×</td></tr>
+            <tr><td>2048² fp32 matmul</td><td class="num t-bad">252.2 ms · 68 GFLOP/s</td><td class="num t-good">95.8 ms · 179 GFLOP/s</td><td class="num">2.6×</td></tr>
+            <tr><td>0.53 M-param training step</td><td class="num t-bad">4,979.7 ms</td><td class="num t-good">100.5 ms</td><td class="num">50×</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        The tell was not a suspicious absolute value — it was an <strong>internal
+        contradiction</strong>. The same run reported a 27.29 M-parameter training step at 1,147 ms
+        and a 0.53 M-parameter step at 4,980 ms. A model performing strictly more arithmetic cannot
+        finish sooner. Something outside the computation was being measured.
+      </p>
+      <p>
+        The cause: each timing sample wrapped exactly one call. That pays a large fixed cost on
+        entry to every timed region — consistent with PyTorch's intra-op thread pool parking
+        between calls and being rewoken, which is expensive under a hypervisor. Warm-up and taking
+        a median did not help, because <em>every</em> sample paid the cost. The fix is standard:
+        choose the inner repeat count at runtime so each timed region lasts long enough that entry
+        cost and clock granularity are negligible.
+      </p>
+      <div class="note">
+        <span class="note-label">Why the bad run is still published</span>
+        <p style="margin-bottom:0">
+          <code>env-bench-01</code> remains in the evidence register, marked <em>INVALID</em>.
+          Deleting it would erase the most transferable lesson here. And it mattered: reading
+          “68 GFLOP/s, 5 seconds per step” as a property of the hardware would have baked a ~50×
+          error into the compute estimate for all eight projects, and would have made several of
+          them look infeasible when they are not.
+        </p>
+      </div>
+    </section>
+
+    <hr>
+
+    <section aria-labelledby="f3-h">
+      <h2 id="f3-h">Finding 3 — the machine is not a benchmark host</h2>
+      <p>
+        During measurement, <strong>37 unrelated containers</strong> were running on this machine —
+        OpenSearch, ClamAV, around ten Postgres instances, Redis, MinIO, MongoDB, Temporal,
+        LiteLLM and several application services — all up for seven hours. They belong to other
+        work and were left running.
+      </p>
+      <div class="table-scroll">
+        <table>
+          <caption>Identical workloads, minutes apart, under different contention.</caption>
+          <thead>
+            <tr><th scope="col">Workload</th><th scope="col">Quieter</th><th scope="col">Contended</th><th scope="col">Ratio</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>2048² matmul, 6 threads</td><td class="num">95.8 ms</td><td class="num">266.6 ms</td><td class="num">2.8×</td></tr>
+            <tr><td>256² matmul, 4 threads</td><td class="num">1.36 ms</td><td class="num">19.17 ms</td><td class="num t-bad">14×</td></tr>
+            <tr><td>0.53 M-param step, 2 threads</td><td class="num">100.5 ms</td><td class="num">278.9 ms</td><td class="num">2.8×</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Consequently: <strong>every timing in this portfolio is a lower bound</strong> on the
+        hardware's capability, every benchmark record carries a system-load snapshot so an outlier
+        is annotated rather than mysterious, and extrapolated training durations are given as
+        ranges spanning both regimes rather than as single numbers.
+      </p>
+      <p>
+        One conclusion survived every contention level and is therefore acted on: <strong>small
+        models train fastest at 2 threads</strong> and are three to six times slower at 6, while
+        large matmuls do scale to 6. Thread count is set per workload rather than once globally.
+      </p>
+    </section>
+
+    <hr>
+
+    <section aria-labelledby="consequences-h">
+      <h2 id="consequences-h">What this means for the eight projects</h2>
+      <div class="table-scroll">
+        <table>
+          <caption>Estimated compute, derived from measured throughput at the pessimistic (contended) end. Marked ESTIMATE because it is arithmetic on measurements, not an observed wall-clock time.</caption>
+          <thead>
+            <tr><th scope="col">#</th><th scope="col">Project</th><th scope="col">Compute — ESTIMATE</th><th scope="col">Blocked on</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="num">1</td><td>Transformer</td><td class="num">37–93 min</td><td class="t-good">nothing</td></tr>
+            <tr><td class="num">2</td><td>GPT (small)</td><td class="num">2–5 h</td><td class="t-good">nothing</td></tr>
+            <tr><td class="num">2b</td><td>GPT @ ~124 M params</td><td class="num t-bad">~10⁴ CPU-hours</td><td class="t-bad">≈10–20 A100-hours</td></tr>
+            <tr><td class="num">3</td><td>LoRA (3 arms)</td><td class="num">~1 h</td><td class="t-good">nothing</td></tr>
+            <tr><td class="num">4</td><td>DPO vs SFT</td><td class="num">~1.5 h</td><td class="t-good">nothing</td></tr>
+            <tr><td class="num">5</td><td>Tiled attention</td><td class="num">~20 min</td><td class="t-warn">NVIDIA GPU for the Triton half</td></tr>
+            <tr><td class="num">6</td><td>Quantization</td><td class="num">~1 h</td><td class="t-warn">low-bit <em>compute</em> speedup unlikely on CPU</td></tr>
+            <tr><td class="num">7</td><td>Mini CLIP</td><td class="num">3–6 h</td><td class="t-warn">dataset licence review</td></tr>
+            <tr><td class="num">8</td><td>DDPM</td><td class="num">3–8 h</td><td class="t-good">nothing</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Seven of eight are locally runnable in roughly 12–25 hours of CPU time, without paid
+        infrastructure. The two exceptions are stated rather than quietly dropped: the 124 M GPT
+        gets a cost estimate instead of a result, and the Triton kernel gets shipped with a
+        parity-and-benchmark harness and an explicit “not yet executed” label until a GPU runs it.
+      </p>
+      <p class="small muted">
+        Full analysis with assumptions written out:
+        <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/env/feasibility.md">env/feasibility.md</a>.
+        Raw probe transcripts, including the Smart App Control traceback:
+        <a href="https://github.com/zexoraai/ml-from-first-principles/tree/main/evidence/env/probe-2026-09-15">evidence/env/probe-2026-09-15/</a>.
+      </p>
+    </section>
+
+    <hr>
+
+    <section aria-labelledby="method-h">
+      <h2 id="method-h">Method commitments</h2>
+      <ul>
+        <li><strong>Benchmarks:</strong> warm-up before timing, adaptive inner repeats so each timed region lasts ~0.3&nbsp;s, median of repeated blocks with min and max retained so throttling is visible rather than averaged away, thread count reported always.</li>
+        <li><strong>Correctness before performance:</strong> every mechanism is checked against an independent oracle and a naive transcription of the paper's equation before any speed claim is made about it.</li>
+        <li><strong>Masking is proved behaviourally,</strong> not by inspecting a weight matrix. Perturb a future token; require earlier outputs to be bit-identical. A transposed mask passes the weaker check and fails this one.</li>
+        <li><strong>Evidence schema:</strong> run identifier, source commit, seeds, dataset version and split, dependency set, hardware, duration, metric definitions stated before metric values, checkpoint checksum, and a reproduction command. A number without a run identifier does not get published.</li>
+        <li><strong>Repeats where cheap:</strong> runs under ten minutes get at least three seeds and report a range. Expensive runs are labelled <em>single run, no variance estimate</em> and no significance is claimed from them.</li>
+      </ul>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>
+      Built by <a href="https://github.com/zexoraai">zexoraai</a>.
+      <a href="https://github.com/zexoraai/ml-from-first-principles">Source and records on GitHub</a>.
+    </p>
+    <p class="small">
+      Guidance on Smart App Control behaviour is summarised from Microsoft's
+      <a href="https://support.microsoft.com/topic/285ea03d-fa88-4d56-882e-6698afdb7003">Smart App Control FAQ</a>
+      and rephrased here for licensing compliance.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
