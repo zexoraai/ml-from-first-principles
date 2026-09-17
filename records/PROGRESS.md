@@ -50,9 +50,25 @@ because no model has been trained yet, and the site says so explicitly.
 
 | URL | Verified | Content |
 |---|---|---|
-| https://zexoraai.github.io/ml-from-first-principles/ | 2026-09-15 | portfolio home, eight project cards, fidelity tier table |
-| https://zexoraai.github.io/ml-from-first-principles/environment.html | 2026-09-15 | measured hardware, three findings, per-project compute estimates |
-| https://github.com/zexoraai/ml-from-first-principles | 2026-09-15 | source + all records |
+| https://zexoraai.github.io/ml-from-first-principles/ | 2026-09-16 | portfolio home, eight project cards, fidelity tier table |
+| https://zexoraai.github.io/ml-from-first-principles/environment.html | 2026-09-16 | measured hardware, three findings, per-project compute estimates |
+| https://zexoraai.github.io/ml-from-first-principles/projects/p1-transformer.html | 2026-09-16 | **Project 1**: live demo, attention viewer, results, case study |
+| https://zexoraai.github.io/ml-from-first-principles/assets/models/p1/manifest.json | 2026-09-16 | model manifest (fetch-confirmed) |
+| https://zexoraai.github.io/ml-from-first-principles/assets/models/p1/parity.json | 2026-09-16 | parity fixture, tolerance 1e-4 (fetch-confirmed) |
+| https://zexoraai.github.io/ml-from-first-principles/assets/models/p1/results.json | 2026-09-16 | run evidence incl. full failure scan (fetch-confirmed) |
+| https://github.com/zexoraai/ml-from-first-principles | 2026-09-16 | source + all records |
+
+### Project 1 final state
+
+| | |
+|---|---|
+| Tests | **161 passing** |
+| Trained run | `p1-date-post-6k`, 931,584 params, 24.0 min, 4.22 M target tokens |
+| Test exact-match (free-running, n=4,713) | **99.94%** — 3 failures, all found and published |
+| Val exact-match (n=4,711) | 99.85% |
+| Demo weights | 3.73 MB, sha256 `cd915539cbad22ab…` |
+| JS↔PyTorch parity | encoder 5.26e-7, logits 3.58e-6, all outputs byte-identical; tolerance 1e-4 |
+| Verified headlessly by | `node scripts/verify_js_parity.mjs` |
 
 ## Mastery ledger (tracked separately from implementation — see brief §6)
 
