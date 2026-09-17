@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project 1 — Encoder–decoder Transformer from the paper</title>
+<meta name="description" content="The original Transformer implemented from Attention Is All You Need, with a live in-browser demo, attention head viewer, verified numerical parity against PyTorch, and full experimental evidence.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="masthead">
+  <div class="wrap masthead-inner">
+    <a class="brand" href="../">ml-from-first-principles<span class="brand-dim">/p1</span></a>
+    <nav class="top" aria-label="Primary">
+      <ul>
+        <li><a href="../">Projects</a></li>
+        <li><a href="../environment.html">Environment&nbsp;&amp;&nbsp;method</a></li>
+        <li><a href="https://github.com/zexoraai/ml-from-first-principles/tree/main/labs/p1_transformer">Source</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<div class="wrap">
+
+  <div class="hero">
+    <p><span class="pill pill--tier-e">Tier E — mechanisms</span>
+       <span class="pill pill--tier-r">Tier R — trained model</span>
+       <span class="pill" id="parity-badge">checking parity…</span></p>
+    <h1>Encoder–decoder Transformer, built from the equations</h1>
+    <p class="lede">
+      Every mechanism in <a href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a>
+      written by hand — scaled dot-product attention, multi-head projections, sinusoidal positional
+      encoding, layer normalization, residual wiring, the position-wise feed-forward network, and
+      both kinds of mask. No <code>nn.Transformer</code>, no <code>nn.MultiheadAttention</code>, no
+      <code>F.scaled_dot_product_attention</code>, no <code>nn.LayerNorm</code> — and that is
+      <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/tests/test_p1_no_builtin_shortcuts.py">enforced by a test</a>
+      that walks the syntax tree, not by a promise in a README.
+    </p>
+  </div>
+
+  <!-- ==================================================================================== -->
+  <section aria-labelledby="question-h">
+    <h2 id="question-h">The research question</h2>
+    <p>
+      <strong>Can a sequence-to-sequence model learn to relocate and reformat information whose
+      position varies from example to example, using attention alone and no recurrence?</strong>
+    </p>
+    <p>
+      The task is date normalisation. Given a human-written date in any of ten formats, emit
+      ISO-8601:
+    </p>
+<pre><code>"March 3, 2019"          →  "2019-03-03"
+"Sunday, 3 Mar 2019"     →  "2019-03-03"
+"22nd December 1999"     →  "1999-12-22"
+"2035 July 4"            →  "2035-07-04"</code></pre>
+    <p>
+      It is a <em>deliberately easy</em> task, chosen so that the mechanisms — not the difficulty —
+      are what gets demonstrated. But it is not trivial in the way a copy task is. To emit output
+      character 0 the model must locate the year, which may be at either end of the input. To emit
+      character 5 it must find the month, which may be a word of three to nine letters or already a
+      number. The mapping is a <em>reordering</em>, so a model without positional information cannot
+      do it at all. That makes it a genuine test of cross-attention and positional encoding, with the
+      convenient property that correctness is a string comparison and needs no judgement.
+    </p>
+    <div class="note">
+      <span class="note-label">What is and is not claimed</span>
+      <p>
+        The <strong>mechanisms</strong> are tier E: implemented from the equations and verified
+        against independent oracles, gradient checks and structural invariants
+        (<span id="test-count">161</span> tests). The <strong>trained model</strong> is tier R: a
+        reduced-scale result on a synthetic task. There is no comparison here to the paper's WMT14
+        BLEU scores — that experiment was not attempted and is not attemptable on the hardware
+        described in <a href="../environment.html">Environment&nbsp;&amp;&nbsp;method</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ==================================================================================== -->
+  <section aria-labelledby="demo-h">
+    <h2 id="demo-h">Live demo</h2>
+    <p>
+      The trained weights are downloaded and run <strong>in your browser</strong> by a JavaScript
+      re-implementation of the forward pass. Nothing here is precomputed or animated. There is no
+      server, no sign-in, and no request sent anywhere when you press Run.
+    </p>
+
+    <div class="note bad" id="parity-failed-warning" hidden>
+      <span class="note-label">Parity failure</span>
+      <p>
+        The in-browser engine currently disagrees with the trained PyTorch model beyond tolerance.
+        Treat the outputs below as untrustworthy until this is fixed. This warning is generated
+        automatically by the check in the next panel — it is not a placeholder.
+      </p>
+    </div>
+
+    <div class="note warn" id="demo-unavailable" hidden>
+      <span class="note-label">Demo not available</span>
+      <p>
+        The model weights could not be loaded, so no live inference is running on this page. Reason:
+        <code id="demo-unavailable-reason"></code>
+      </p>
+      <p class="small">
+        This message appears instead of a fabricated result. The implementation and its tests are
+        still fully browsable in the repository.
+      </p>
+    </div>
+
+    <div id="demo-live">
+      <div class="demo">
+        <div class="demo-row">
+          <label for="demo-input">Enter a date</label>
+          <input type="text" id="demo-input" maxlength="32" autocomplete="off"
+                 aria-describedby="demo-input-help" placeholder="e.g. 14 February 1990">
+          <button type="button" id="demo-run">Run</button>
+        </div>
+        <p class="small muted" id="demo-input-help">
+          Capped at 32 characters — the positional table this model was trained with. Output is
+          capped at 12 tokens. Both limits are the model's, not a rate limit.
+        </p>
+        <div class="presets" id="demo-presets"></div>
+
+        <div class="output-box">
+          <div class="output-value" id="demo-output">—</div>
+          <div class="output-meta">
+            <span class="pill" id="demo-shape-badge">—</span>
+            <span class="small muted" id="demo-latency"></span>
+            <span class="small t-warn" id="demo-status"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats" id="model-stats">
+        <div class="stat"><dt>parameters</dt><dd id="model-params">—</dd></div>
+        <div class="stat"><dt>weights on the wire</dt><dd id="model-size">—</dd></div>
+        <div class="stat"><dt>architecture</dt><dd class="small" id="model-config">—</dd></div>
+        <div class="stat"><dt>source run</dt><dd class="small" id="model-run">—</dd></div>
+      </div>
+
+      <h3>Does the browser agree with PyTorch?</h3>
+      <p>
+        A re-implementation that quietly disagrees with the trained model would turn “genuine model
+        output” into a fabrication. So the page checks itself on load against reference outputs
+        exported from PyTorch, and prints the measured deviation rather than asserting correctness.
+      </p>
+      <div class="table-scroll" id="parity-report"></div>
+
+      <h3>Tokenisation and tensor shapes</h3>
+      <p>
+        Both tables below are computed from the input you typed, on this page, during the run above.
+      </p>
+      <div class="panel-grid">
+        <div class="table-scroll" id="demo-tokens"></div>
+        <div class="table-scroll" id="demo-shapes"></div>
+      </div>
+
+      <h3>Attention heads</h3>
+      <div class="demo">
+        <div class="demo-row">
+          <label for="attn-kind">Attention</label>
+          <select id="attn-kind">
+            <option value="cross">cross-attention (decoder → encoder)</option>
+            <option value="decoder-self">decoder self-attention (causal)</option>
+            <option value="encoder-self">encoder self-attention</option>
+          </select>
+          <label for="attn-layer">Layer</label><select id="attn-layer"></select>
+          <label for="attn-head">Head</label><select id="attn-head"></select>
+        </div>
+        <div class="heatmap-wrap" id="attn-map"></div>
+        <p class="small muted" id="attn-note"></p>
+      </div>
+
+      <div class="note warn">
+        <span class="note-label">Why these pictures are not explanations</span>
+        <p>
+          An attention map shows where a weighted average drew from, in one head, at one layer, for
+          one input. It does <strong>not</strong> establish that the information was used. A head can
+          place high weight on a token and contribute nothing to the logit that actually decided the
+          output: the residual stream carries information around it, later layers can overwrite it,
+          and <code>W^O</code> can project its contribution into a direction the output projection
+          ignores.
+        </p>
+        <p>
+          Establishing use requires <em>intervention</em>, not inspection — ablate the head and
+          measure the change in the output, or patch its activations from a different input and see
+          whether the prediction follows. Reading a heatmap and concluding “this head finds the year”
+          is a hypothesis, not a result. None of the maps above are offered as evidence for a causal
+          claim, and none of the numbers in the Results section depend on them.
+        </p>
+      </div>
+
+      <h3>Masks</h3>
+      <div class="demo">
+        <div class="demo-row">
+          <label for="mask-kind">Mask</label>
+          <select id="mask-kind">
+            <option value="causal">causal only</option>
+            <option value="padding">padding only</option>
+            <option value="combined">combined (causal AND padding)</option>
+          </select>
+        </div>
+        <div class="heatmap-wrap" id="mask-map"></div>
+        <p class="small muted" id="mask-note"></p>
+        <p class="small"><span class="pill pill--wip">illustration</span>
+          This panel is the only thing on the page that is not a live forward pass. It draws the mask
+          <em>rule</em> on a fixed 7-position example so the structure is visible. The same rule, in
+          code, produces the masks used in the runs above.</p>
+      </div>
+
+      <h3>Token probabilities at each decoding step</h3>
+      <p>
+        Greedy decoding takes the argmax at every step, so the distribution shown is exactly the one
+        the chosen character came from. Entropy separates two failures that look identical in the
+        output: confidently wrong (low entropy — it learned something wrong) from undecided
+        (high entropy — it learned nothing here yet).
+      </p>
+      <div class="table-scroll" id="demo-steps"></div>
+    </div>
+  </section>
+
+  <!-- ==================================================================================== -->
+  <section aria-labelledby="arch-h">
+    <h2 id="arch-h">Architecture walkthrough</h2>
+    <p>
+      One forward pass for <code>"3 Mar 2019"</code> (10 characters), producing output position 0.
+      Configuration: <code>d_model=128</code>, <code>h=4</code>, <code>d_k=d_v=32</code>,
+      <code>d_ff=512</code>, 2 encoder + 2 decoder layers, post-norm.
+    </p>
+
+    <ol class="steps">
+      <li>
+        <h4>Tokenise</h4>
+        <p>Character level: 10 ids. Sub-word tokens would add a vocabulary-construction step with
+        nothing to teach here, and would hide the digit-level copying that makes the attention maps
+        legible. <code class="mono">(1, 10)</code></p>
+      </li>
+      <li>
+        <h4>Embed, then scale by √d_model</h4>
+        <p>Section 3.4. The factor is <code>√128 ≈ 11.31</code>. Embeddings are initialised at std
+        <code>d_model^-0.5 ≈ 0.088</code>; positional encodings are bounded in <code>[-1, 1]</code>.
+        Skip the scaling and position drowns out token identity.
+        <code class="mono">(1, 10, 128)</code></p>
+      </li>
+      <li>
+        <h4>Add positional encoding</h4>
+        <p>Without it, self-attention is permutation-equivariant: shuffle the input and the output
+        comes back shuffled with identical values. Nothing inside
+        <code>softmax(QKᵀ/√d_k)V</code> depends on an index.
+        <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/tests/test_p1_positional.py">A test demonstrates that weakness</a>
+        rather than asserting it, then shows it repaired.</p>
+      </li>
+      <li>
+        <h4>Encoder self-attention</h4>
+        <p>Project to q, k, v; split into 4 heads of 32; scores <code class="mono">(1, 4, 10, 10)</code>;
+        softmax over <em>keys</em>; weighted sum of values; merge heads; <code>W^O</code>. Then add
+        the residual and normalise — post-norm, per §3.1.</p>
+      </li>
+      <li>
+        <h4>Position-wise feed-forward</h4>
+        <p><code>128 → 512 → ReLU → 128</code>, applied to each position independently. This is the
+        only place non-linear per-token computation happens, and it holds roughly twice the
+        parameters of the attention sub-layer.</p>
+      </li>
+      <li>
+        <h4>Second encoder layer, then stop</h4>
+        <p>Output is the <em>memory</em>, <code class="mono">(1, 10, 128)</code>. Every decoder layer
+        will attend to this same tensor — decoder layer 0 does not read encoder layer 0. That is why
+        the encoder is computed once and reused for all decoding steps.</p>
+      </li>
+      <li>
+        <h4>Decoder self-attention, masked</h4>
+        <p>With only <code>[BOS]</code> present the causal mask is vacuous, but it is still applied —
+        at step 7 it will not be. Forbidden scores become <code>-∞</code> so <code>exp</code> returns
+        exactly zero.</p>
+      </li>
+      <li>
+        <h4>Cross-attention</h4>
+        <p>Queries from the decoder, keys and values from the memory. Scores
+        <code class="mono">(1, 4, 1, 10)</code> — one row, ten columns. <strong>This is where the
+        model decides which input characters matter for this output position.</strong> It is the only
+        non-square score tensor in the model, and the one drawn by default in the viewer above.</p>
+      </li>
+      <li>
+        <h4>Project to logits</h4>
+        <p><code class="mono">(1, 1, 128) → (1, 1, 70)</code> through the shared embedding matrix.
+        Because weights are tied (§3.4), the logit for token <em>t</em> is the dot product of the
+        hidden state with <em>t</em>'s own embedding — literally “how much does my current state look
+        like token <em>t</em>”.</p>
+      </li>
+      <li>
+        <h4>Argmax, append, repeat</h4>
+        <p>Back to step 7 with <code>T = 2</code>. The whole prefix is recomputed each step, so
+        producing <em>n</em> tokens costs O(<em>n</em>²) decoder work. A KV cache would make it
+        linear; it is deliberately not implemented, and no efficient-generation claim is made.</p>
+      </li>
+    </ol>
+
+    <p>
+      The full fourteen-step treatment — including the loss, gradient flow, checkpoint recovery,
+      failure diagnosis and performance trade-offs — is in
+      <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/docs/teaching/p1-composition.md">the teaching document</a>,
+      which also contains 30-second, five-minute and technical versions of the same explanation.
+    </p>
+  </section>
+
+  <!-- ==================================================================================== -->
+  <section aria-labelledby="eq-h">
+    <h2 id="eq-h">Equations wired to code</h2>
+    <p>Every equation the paper states, and the function that implements it.</p>
+
+    <div class="eqmap">
+      <div class="eqmap-row">
+        <div class="eqmap-eq">Attention(Q,K,V) = softmax(QKᵀ / √d_k) · V
+          <div class="eqmap-where">§3.2.1, Equation 1</div></div>
+        <div class="eqmap-code">
+          <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/labs/p1_transformer/attention.py"><code>attention.scaled_dot_product_attention</code></a>
+          <p class="small">The √d_k divisor is the paper's footnote-4 argument: with unit-variance
+          components the dot product has variance d_k, so unscaled scores saturate softmax and the
+          gradient vanishes. Measured, not asserted.</p>
+        </div>
+      </div>
+
+      <div class="eqmap-row">
+        <div class="eqmap-eq">MultiHead(Q,K,V) = Concat(head₁…head_h)·W^O<br>
+          head_i = Attention(QW_i^Q, KW_i^K, VW_i^V)
+          <div class="eqmap-where">§3.2.2</div></div>
+        <div class="eqmap-code">
+          <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/labs/p1_transformer/attention.py"><code>attention.MultiHeadAttention</code></a>,
+          <code>split_heads</code>, <code>merge_heads</code>
+          <p class="small">One big matrix per role, sliced into heads — algebraically identical to
+          the paper's h separate matrices, and far faster. Verified by copying our weights into
+          <code>nn.MultiheadAttention</code>'s packed layout and demanding identical output.</p>
+        </div>
+      </div>
+
+      <div class="eqmap-row">
+        <div class="eqmap-eq">FFN(x) = max(0, xW₁ + b₁)W₂ + b₂
+          <div class="eqmap-where">§3.3</div></div>
+        <div class="eqmap-code">
+          <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/labs/p1_transformer/layers.py"><code>layers.PositionwiseFeedForward</code></a>
+          <p class="small">Biases are present because the paper writes them; the attention
+          projections have none because it writes those as bare matrices.</p>
+        </div>
+      </div>
+
+      <div class="eqmap-row">
+        <div class="eqmap-eq">y = LayerNorm(x + Dropout(Sublayer(x)))
+          <div class="eqmap-where">§3.1 with dropout placed per §5.4</div></div>
+        <div class="eqmap-code">
+          <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/labs/p1_transformer/layers.py"><code>layers.SublayerConnection</code></a>
+          <p class="small">This is <em>post</em>-norm, what the paper text says. The authors' own
+          <code>tensor2tensor</code> release shipped pre-norm. Both are implemented; post-norm is the
+          default because we cite §3.1.</p>
+        </div>
+      </div>
+
+      <div class="eqmap-row">
+        <div class="eqmap-eq">LayerNorm(z) = (z − μ)/√(σ² + ε) ⊙ γ + β
+          <div class="eqmap-where">Ba et al., arXiv:1607.06450</div></div>
+        <div class="eqmap-code">
+          <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/labs/p1_transformer/layers.py"><code>layers.LayerNorm</code></a>
+          <p class="small">Two details must be right or parity breaks: σ² is <strong>biased</strong>
+          (divide by n), and ε goes <strong>inside</strong> the square root. Both have dedicated
+          tests that fail if “corrected”.</p>
+        </div>
+      </div>
+
+      <div class="eqmap-row">
+        <div class="eqmap-eq">PE(pos,2i)&nbsp;&nbsp;= sin(pos / 10000^(2i/d_model))<br>
+          PE(pos,2i+1) = cos(pos / 10000^(2i/d_model))
+          <div class="eqmap-where">§3.5</div></div>
+        <div class="eqmap-code">
+          <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/labs/p1_transformer/positional.py"><code>positional.sinusoidal_positional_encoding</code></a>
+          <p class="small">The paper's stated reason for sinusoids: PE(pos+k) is a fixed linear
+          function of PE(pos). A test verifies the rotation identity numerically, which is what makes
+          relative addressing learnable from absolute encodings.</p>
+        </div>
+      </div>
+
+      <div class="eqmap-row">
+        <div class="eqmap-eq">lrate = d_model^−0.5 · min(step^−0.5, step · warmup^−1.5)
+          <div class="eqmap-where">§5.3, Equation 3</div></div>
+        <div class="eqmap-code">
+          <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/labs/p1_transformer/optim.py"><code>optim.NoamSchedule</code></a>
+          <p class="small">The two branches are equal at <code>step == warmup</code>, so the peak
+          sits exactly on the warmup step. Warmup is not decoration: post-norm rescales the identity
+          path at every layer, and a large initial rate diverges without it.</p>
+        </div>
+      </div>
+
+      <div class="eqmap-row">
+        <div class="eqmap-eq">q(correct) = 1 − ε&nbsp;&nbsp;·&nbsp;&nbsp;q(other) = ε/(V−2)
+          <div class="eqmap-where">§5.4, ε_ls = 0.1</div></div>
+        <div class="eqmap-code">
+          <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/labs/p1_transformer/optim.py"><code>optim.LabelSmoothingLoss</code></a>
+          <p class="small">Padding gets zero smoothing mass — it is never a legitimate output.
+          At ε = 0 this reduces <em>exactly</em> to cross-entropy, which is the cheapest strong check
+          that the smoothed path has no normalisation error.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================================================================================== -->
+  <section aria-labelledby="results-h">
+    <h2 id="results-h">Results</h2>
+
+    <div class="note warn" id="results-unavailable" hidden>
+      <span class="note-label">Results not available</span>
+      <p>The evidence file could not be loaded: <code id="results-unavailable-reason"></code>.
+      No numbers are shown rather than placeholder ones.</p>
+    </div>
+
+    <p>
+      Every number below is read from the run's evidence file at page load, not typed into this page.
+      A figure here cannot drift from the run that produced it.
+    </p>
+
+    <h3>Metric definitions, before any values</h3>
+    <ul>
+      <li><strong>cross-entropy</strong> — mean <em>unsmoothed</em> loss per non-padding target
+        token, in nats. Unsmoothed on purpose: training uses label smoothing, which §5.4 says
+        deliberately hurts perplexity, so the two must not share an axis.</li>
+      <li><strong>token accuracy (teacher forced)</strong> — fraction of target positions whose
+        argmax is correct <em>given the correct prefix</em>. The optimistic metric.</li>
+      <li><strong>exact match (free running)</strong> — fraction of examples where greedy decoding
+        from BOS alone, with no access to the target, reproduces the whole ISO string. The honest
+        metric, and the headline. Strictly harder: one early slip derails everything after it.</li>
+    </ul>
+    <p class="small muted">
+      The <em>gap</em> between the last two is the informative quantity. A wide gap means the model
+      predicts well one step at a time but compounds its own errors once it consumes its own output.
+    </p>
+
+    <div class="table-scroll" id="results-table"></div>
+    <dl class="stats" id="run-facts"></dl>
+
+    <h3>Training curve</h3>
+    <div class="curve-wrap" id="curve"></div>
+  </section>
+
+  <!-- ==================================================================================== -->
+  <section aria-labelledby="limits-h">
+    <h2 id="limits-h">Limitations and failures</h2>
+
+    <h3>Every failure the model makes on held-out data</h3>
+    <p>
+      At this accuracy a 24-example sample contains no failures at all, and “here are 24 correct
+      outputs” would not be a failure analysis. So the full test split is scanned and every failure
+      reported. The table is read from the evidence file.
+    </p>
+    <div class="table-scroll" id="failure-table"></div>
+
+    <div class="note">
+      <span class="note-label">What the failures have in common</span>
+      <p>
+        All three are <strong>digit-level slips inside an otherwise perfectly structured output</strong>.
+        The model never emits a malformed string: the <code>YYYY-MM-DD</code> skeleton, the hyphen
+        positions and the field widths are always right. What fails is character selection.
+      </p>
+      <p>
+        Two of the three are the same error: a two-digit day of 30 or 31 emitted as
+        <code>03</code> — the correct digits, in the wrong order, with the leading zero that a
+        single-digit day would need. The third is <code>1966 → 1996</code>, a 6/9 substitution.
+      </p>
+      <p>
+        That pattern is consistent with the division of labour the architecture implies. The
+        <em>structure</em> is positional and comes cheaply from the decoder's own causal
+        self-attention — it always knows it is at output position 8 and that position 8 is a day
+        digit. The <em>content</em> requires cross-attention to fetch the right source character, and
+        that is where the error lands. It is a hypothesis consistent with the evidence, not a
+        demonstrated mechanism: confirming it would need the ablation work described in the
+        attention caveat above.
+      </p>
+    </div>
+
+    <h3>What this project does not establish</h3>
+    <ul>
+      <li><strong>No published result is reproduced.</strong> The paper's WMT14 English–German BLEU
+        of 28.4 required 8×P100 for 12 hours. This ran on a 6-core mobile CPU with no GPU. That
+        experiment was not attempted, and the trained model here says nothing about it.</li>
+      <li><strong>The task is synthetic and easy.</strong> Ten formats, generated by
+        <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/labs/p1_transformer/data.py">our own code</a>,
+        with a single correct answer per input. High accuracy here is evidence the mechanisms work,
+        not evidence of language ability.</li>
+      <li><strong>Single run.</strong> One seed, no variance estimate. No claim rests on a difference
+        small enough for seed noise to explain.</li>
+      <li><strong>Attention maps are not explanations.</strong> See the box in the demo section. This
+        is the most common overclaim in Transformer write-ups and none of the results here depend on
+        avoiding it.</li>
+      <li><strong>Greedy decoding only.</strong> The paper used beam search with beam 4 and length
+        penalty 0.6. Beam search is not implemented.</li>
+      <li><strong>No KV cache.</strong> Generation is O(n²) in output length. No efficiency claim is
+        made.</li>
+      <li><strong>Timings are lower bounds.</strong> The development machine runs an unrelated
+        37-container stack, which varied measured throughput by up to 14×. See
+        <a href="../environment.html">Environment&nbsp;&amp;&nbsp;method</a>.</li>
+    </ul>
+
+    <h3>Known data quirk, documented rather than hidden</h3>
+    <p>
+      <strong>May</strong> is the only month whose three-letter abbreviation equals its full name, so
+      two pairs of renderers produce byte-identical strings for May dates
+      (<code>"May 1, 2019"</code> from both <code>month_day_year</code> and
+      <code>abbr_day_year</code>). May dates therefore have 8 distinct renderings where other months
+      have 10. This was found by a test, not by inspection, and the generator now deduplicates on the
+      rendered string rather than trusting distinct format names. An earlier collision
+      (<code>"24 Sep 1984"</code> from two different renderers, for every two-digit day) silently
+      duplicated examples until the same test caught it.
+    </p>
+  </section>
+
+  <!-- ==================================================================================== -->
+  <section aria-labelledby="case-h">
+    <h2 id="case-h">Case study</h2>
+
+    <h3>1 · Research question</h3>
+    <p>Can attention alone, with no recurrence, learn to relocate and reformat information whose
+    position varies per example?</p>
+
+    <h3>2 · Hypothesis</h3>
+    <p>A two-layer encoder–decoder with 4 heads and <code>d_model=128</code> should reach high
+    exact-match on date normalisation within a few thousand CPU-minutes, and its cross-attention
+    should concentrate on the input span corresponding to each output field. The second half of that
+    hypothesis is a <em>prediction about a picture</em>, and is treated as unverified — see the
+    caveat in the demo section.</p>
+
+    <h3>3 · What was implemented</h3>
+    <p>All seven mechanisms by hand, plus the §5.3 schedule and §5.4 label smoothing, the data
+    generator, a resumable training loop, greedy decoding, an ONNX-free JavaScript inference engine,
+    and a parity harness tying the two together. The paper's post-norm placement is the default, with
+    pre-norm behind a flag so the discrepancy between the paper and the authors' code is a runnable
+    experiment rather than a footnote.</p>
+
+    <h3>4 · Experimental setup</h3>
+    <p>Splits are drawn over <strong>calendar dates, not rendered strings</strong>, so every
+    rendering of a date lands in one split. The naive alternative leaks badly: the model would meet
+    <code>"March 3, 2019"</code> in training and be scored on <code>"3 Mar 2019"</code> having
+    already memorised that date's answer, and validation accuracy would measure memorisation while
+    looking excellent. A test asserts no ISO date appears in two splits.</p>
+
+    <h3>5 · Baseline</h3>
+    <p>An untrained model of the same architecture. Its loss sits at approximately
+    <code>log(V) = log(70) ≈ 4.25</code> nats — a uniform distribution over the vocabulary — and its
+    exact-match is 0%. A test pins the initialisation to that value, because an init that is
+    accidentally informative would flatter every subsequent number.</p>
+
+    <h3>6 · Measured results</h3>
+    <p>See the Results section, read live from the evidence file.</p>
+
+    <h3>7 · Failures and revisions</h3>
+    <p>Four worth recording, all found by tests rather than by inspection:</p>
+    <ul>
+      <li><strong>A benchmark wrong by 300×.</strong> The first CPU benchmark timed one call per
+        sample and reported a 0.53 M-parameter training step at 4,980 ms — while simultaneously
+        reporting a 27 M-parameter step at 1,147 ms. A larger model cannot be faster. Reading that as
+        “this laptop is slow” would have baked a ~50× error into every compute estimate for all eight
+        projects. The bad run is <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/records/EXPERIMENTS.md">kept in the register</a>,
+        marked invalid.</li>
+      <li><strong>Two renderer collisions.</strong> Described above. The second one is a fact about
+        English month names and cannot be fixed by changing formats, which is why deduplication moved
+        to the rendered string.</li>
+      <li><strong>A test that was wrong about the model.</strong> An early padding test replaced pad
+        ids with a real token id and expected the output to be unchanged. But the padding mask is
+        <em>derived from the ids</em>, so that legitimately changes the mask. The test failed and the
+        model was right; the correct formulation compares padded against unpadded, and is strictly
+        stronger.</li>
+      <li><strong>A resume bug PyTorch does not warn about.</strong>
+        <code>LRScheduler.load_state_dict</code> restores the scheduler's position but does
+        <em>not</em> write the learning rate back into <code>optimizer.param_groups</code>. Real
+        resume code survives only because the optimizer's own state dict carries the lr — making
+        correctness depend on the order of two calls. The training script now syncs explicitly.</li>
+    </ul>
+
+    <h3>8 · What the evidence supports</h3>
+    <p>That the mechanisms are implemented correctly — numerical parity against two independent
+    PyTorch oracles and a float64 hand transcription, interventional proof that masking blocks
+    information flow end-to-end through the full stack, and a single-batch overfit that reaches
+    near-zero loss <em>and</em> exact greedy reconstruction. And that at this scale the architecture
+    learns the task from date-disjoint data.</p>
+
+    <h3>9 · What remains unproven</h3>
+    <p>Everything about scale, natural language, and interpretability. Whether the attention patterns
+    mean what they appear to mean is untested — that needs ablation or activation patching, neither
+    of which was run. Whether post-norm or pre-norm is better here is unmeasured; the comparison is
+    set up in the mastery pack as a prediction exercise, not reported as a result.</p>
+
+    <h3>10 · Demo and reproduction</h3>
+    <p>The demo is above. Reproduction commands are below.</p>
+  </section>
+
+  <!-- ==================================================================================== -->
+  <section aria-labelledby="repro-h">
+    <h2 id="repro-h">Reproduce it</h2>
+    <p>
+      All Python runs inside a pinned Linux container. That is not a stylistic choice — the
+      development host has Windows Smart App Control enforcing, which blocks PyTorch's unsigned DLLs
+      from loading. <a href="../environment.html">Full story here.</a>
+    </p>
+<pre><code>git clone https://github.com/zexoraai/ml-from-first-principles
+cd ml-from-first-principles
+docker build -t ml-labs:cpu .
+
+# correctness suite — every mechanism, plus the no-shortcuts check
+.\run.cmd python -m pytest tests -q
+
+# train (about 30 min on 6 CPU threads; 2 threads is the measured optimum)
+.\run.cmd python scripts/train_p1.py --run-name p1-date-post-6k --steps 6000 --warmup 400
+
+# export the trained weights for in-browser inference, with a parity fixture
+.\run.cmd python scripts/export_p1_web.py --checkpoint runs/p1-date-post-6k/checkpoint_best.pt</code></pre>
+
+    <h3>Evidence bundle</h3>
+    <ul>
+      <li><a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/records/EXPERIMENTS.md">Experiment register</a>
+        — every reported number, with seeds, hardware, dataset version, checkpoint sha256 and a
+        reproduction command. Includes the invalid benchmark, retained on purpose.</li>
+      <li><a href="../assets/models/p1/manifest.json">Model manifest</a> — architecture, parameter
+        count, weight file sha256, source run.</li>
+      <li><a href="../assets/models/p1/parity.json">Parity fixture</a> — the PyTorch reference outputs
+        this page checks itself against.</li>
+      <li><a href="../assets/models/p1/results.json">Run results</a> — the file the Results section
+        reads from.</li>
+      <li><a href="https://github.com/zexoraai/ml-from-first-principles/tree/main/tests">Correctness suite</a>
+        — <span id="test-count-2">161</span> tests.</li>
+      <li><a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/docs/teaching/p1-composition.md">Teaching document</a>
+        — the fourteen-step composition, plus three explanation depths.</li>
+      <li><a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/mastery/p1_transformer.md">Mastery pack</a>
+        — defence questions, shape and numerical exercises, three planted bugs, two blind
+        implementations, and a prediction experiment.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="explain-h">
+    <h2 id="explain-h">Three explanations, three depths</h2>
+    <div class="explain-tabs">
+      <div class="explain-card">
+        <h4>30 seconds</h4>
+        <p>A Transformer turns one sequence into another by letting every output position look
+        directly at every input position and take a weighted average of what it finds — with the
+        model choosing the weights. Doing that in several “heads” at once lets it track several
+        kinds of relationship simultaneously. Because nothing waits for anything else, the whole
+        thing trains in parallel, which is why it replaced recurrent networks.</p>
+      </div>
+      <div class="explain-card">
+        <h4>Five minutes</h4>
+        <p>Every position emits a key (“what I am”), a value (“what I'd contribute”) and a query
+        (“what I need”). Dot a query against all keys, softmax, and you have weights summing to one;
+        take the weighted average of the values. Divide by √d_k or high-dimensional dot products
+        saturate the softmax and kill the gradient. Do it h times on narrower slices. Then note that
+        nothing so far depends on position — so add a sinusoidal pattern, chosen because shifting
+        position by k rotates each sine/cosine pair by a fixed angle, making “look three back” one
+        learnable linear map. Stack it, mask the decoder's future, and feed it the target shifted
+        right: one pass then trains every next-token prediction at once.
+        <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/docs/teaching/p1-composition.md#five-minutes-at-a-whiteboard">Full version.</a></p>
+      </div>
+      <div class="explain-card">
+        <h4>Technical</h4>
+        <p>Fourteen steps from the problem statement to performance trade-offs, with every equation
+        tied to the function that implements it, tensor shapes at every boundary, gradient flow
+        through post-norm residuals, and a symptom-to-cause diagnosis table.
+        <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/docs/teaching/p1-composition.md">Read it.</a></p>
+      </div>
+    </div>
+  </section>
+
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>
+      Project 1 of eight. <a href="../">Back to the portfolio</a> ·
+      <a href="https://github.com/zexoraai/ml-from-first-principles">Source and records</a>
+    </p>
+    <p class="small">
+      Paper: Vaswani et al., <em>Attention Is All You Need</em>, arXiv:1706.03762v7 — property of its
+      authors. This project implements and cites it; it does not reproduce its text or its results.
+    </p>
+  </div>
+</footer>
+
+<script type="module" src="../assets/js/p1-demo.js"></script>
+</body>
+</html>

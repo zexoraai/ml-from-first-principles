@@ -43,6 +43,7 @@ from .attention import (
     scaled_dot_product_attention,
     split_heads,
 )
+from .generate import decode_step_trace, greedy_decode
 from .layers import LayerNorm, PositionwiseFeedForward, SublayerConnection
 from .masks import (
     causal_keep_mask,
@@ -50,6 +51,15 @@ from .masks import (
     fully_masked_rows,
     padding_key_mask,
 )
+from .model import (
+    Decoder,
+    DecoderLayer,
+    Encoder,
+    EncoderLayer,
+    Transformer,
+    TransformerConfig,
+)
+from .optim import LabelSmoothingLoss, NoamSchedule, build_optimizer
 from .positional import SinusoidalPositionalEncoding, sinusoidal_positional_encoding
 
 __all__ = [
@@ -70,6 +80,20 @@ __all__ = [
     # positional
     "sinusoidal_positional_encoding",
     "SinusoidalPositionalEncoding",
+    # model
+    "TransformerConfig",
+    "Transformer",
+    "Encoder",
+    "Decoder",
+    "EncoderLayer",
+    "DecoderLayer",
+    # training
+    "NoamSchedule",
+    "LabelSmoothingLoss",
+    "build_optimizer",
+    # inference
+    "greedy_decode",
+    "decode_step_trace",
 ]
 
 PAPER = {

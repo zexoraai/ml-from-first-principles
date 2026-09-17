@@ -209,3 +209,99 @@ footer a { color: var(--accent); }
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
+
+/* ---------------------------------------------------------------------------------------------
+   Demo components (project pages)
+   --------------------------------------------------------------------------------------------- */
+
+.demo {
+  background: var(--bg-raised); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.25rem; margin: 1.5rem 0;
+}
+.demo-row { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+.demo-row label { font: 600 0.8rem/1 var(--mono); color: var(--text-muted); }
+
+input[type="text"], select {
+  background: var(--bg-inset); color: var(--text);
+  border: 1px solid var(--border-bright); border-radius: 6px;
+  padding: 0.55rem 0.7rem; font: 0.95rem/1.3 var(--mono);
+}
+input[type="text"] { flex: 1 1 18rem; min-width: 0; }
+input[type="text"]:focus, select:focus { border-color: var(--accent); }
+
+button {
+  background: var(--accent-dim); color: var(--text-bright);
+  border: 1px solid #4a6da8; border-radius: 6px;
+  padding: 0.55rem 1rem; font: 600 0.9rem/1.3 var(--sans); cursor: pointer;
+}
+button:hover { background: #35558f; }
+button.preset {
+  background: var(--bg-inset); border-color: var(--border-bright);
+  color: var(--text-muted); font: 0.82rem/1.2 var(--mono); padding: 0.4rem 0.6rem;
+}
+button.preset:hover { color: var(--text-bright); border-color: var(--accent); }
+
+.presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+
+.output-box {
+  margin-top: 1rem; padding: 1rem;
+  background: var(--bg-inset); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.output-value {
+  font: 700 clamp(1.4rem, 4vw, 2rem)/1.2 var(--mono);
+  color: var(--good); letter-spacing: 0.02em; word-break: break-all;
+}
+.output-meta { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-top: 0.6rem; }
+
+.panel-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); max-width: none; }
+
+/* attention heatmaps ------------------------------------------------------------------------- */
+.heatmap-wrap { overflow-x: auto; }
+table.heatmap { border-collapse: collapse; font: 0.72rem/1 var(--mono); width: auto; }
+table.heatmap caption { caption-side: top; padding: 0 0 0.6rem; border: 0; font-size: 0.82rem; }
+table.heatmap th {
+  background: none; color: var(--text-muted); font-weight: 500;
+  padding: 2px 3px; text-align: center; white-space: nowrap; border: 0;
+}
+table.heatmap th[scope="row"] { text-align: right; padding-right: 6px; color: var(--text-bright); }
+table.heatmap td {
+  width: 17px; height: 17px; padding: 0; border: 1px solid #0d1117; border-radius: 2px;
+}
+table.heatmap td.strong { outline: 1px solid rgba(255,255,255,0.35); outline-offset: -2px; }
+
+/* equation ↔ code map ----------------------------------------------------------------------- */
+.eqmap { display: grid; gap: 0.75rem; max-width: none; }
+.eqmap-row {
+  display: grid; gap: 0.5rem 1rem; grid-template-columns: 1fr; align-items: start;
+  background: var(--bg-raised); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.9rem 1rem;
+}
+@media (min-width: 720px) { .eqmap-row { grid-template-columns: 1.1fr 1fr; } }
+.eqmap-eq { font: 0.95rem/1.6 var(--mono); color: var(--text-bright); overflow-x: auto; }
+.eqmap-code { font: 0.82rem/1.5 var(--mono); color: var(--text-muted); }
+.eqmap-code a { color: var(--accent); }
+.eqmap-where { font: 0.75rem/1.4 var(--mono); color: var(--text-muted); margin-top: 0.3rem; }
+
+/* step-by-step walkthrough ------------------------------------------------------------------ */
+ol.steps { counter-reset: s; list-style: none; padding: 0; max-width: var(--measure); }
+ol.steps > li {
+  counter-increment: s; position: relative; padding-left: 2.6rem; margin-bottom: 1.1rem;
+}
+ol.steps > li::before {
+  content: counter(s); position: absolute; left: 0; top: 0;
+  width: 1.9rem; height: 1.9rem; border-radius: 50%;
+  background: var(--bg-inset); border: 1px solid var(--border-bright);
+  color: var(--accent); font: 650 0.8rem/1.85rem var(--mono); text-align: center;
+}
+ol.steps h4 { margin: 0 0 0.25rem; }
+
+.curve-wrap { background: var(--bg-inset); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
+.curve-wrap svg { width: 100%; height: auto; display: block; }
+
+.explain-tabs { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); max-width: none; }
+.explain-card {
+  background: var(--bg-raised); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; padding: 1rem 1.1rem;
+}
+.explain-card h4 { margin-top: 0; }
+.explain-card p { font-size: 0.93rem; }

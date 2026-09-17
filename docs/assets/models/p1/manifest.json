@@ -1,0 +1,458 @@
+{
+  "project": "p1_transformer",
+  "paper": "arXiv:1706.03762v7",
+  "source_run": "p1-date-post-6k",
+  "checkpoint_step": 4000,
+  "config": {
+    "vocab_size": 70,
+    "d_model": 128,
+    "num_heads": 4,
+    "d_ff": 512,
+    "num_encoder_layers": 2,
+    "num_decoder_layers": 2,
+    "dropout": 0.1,
+    "attention_dropout": 0.0,
+    "max_len": 36,
+    "norm_style": "post",
+    "tie_embeddings": true,
+    "scale_embeddings": true,
+    "pad_id": 0,
+    "bos_id": 1,
+    "eos_id": 2,
+    "layer_norm_eps": 1e-05
+  },
+  "n_parameters": 931584,
+  "weights": {
+    "tensors": {
+      "decoder.embedding.weight": {
+        "offset": 0,
+        "shape": [
+          70,
+          128
+        ]
+      },
+      "decoder.layers.0.cross_attn.w_k.weight": {
+        "offset": 8960,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "decoder.layers.0.cross_attn.w_o.weight": {
+        "offset": 25344,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "decoder.layers.0.cross_attn.w_q.weight": {
+        "offset": 41728,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "decoder.layers.0.cross_attn.w_v.weight": {
+        "offset": 58112,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "decoder.layers.0.ffn.w_1.bias": {
+        "offset": 74496,
+        "shape": [
+          512
+        ]
+      },
+      "decoder.layers.0.ffn.w_1.weight": {
+        "offset": 75008,
+        "shape": [
+          512,
+          128
+        ]
+      },
+      "decoder.layers.0.ffn.w_2.bias": {
+        "offset": 140544,
+        "shape": [
+          128
+        ]
+      },
+      "decoder.layers.0.ffn.w_2.weight": {
+        "offset": 140672,
+        "shape": [
+          128,
+          512
+        ]
+      },
+      "decoder.layers.0.self_attn.w_k.weight": {
+        "offset": 206208,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "decoder.layers.0.self_attn.w_o.weight": {
+        "offset": 222592,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "decoder.layers.0.self_attn.w_q.weight": {
+        "offset": 238976,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "decoder.layers.0.self_attn.w_v.weight": {
+        "offset": 255360,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "decoder.layers.0.sub_cross.norm.beta": {
+        "offset": 271744,
+        "shape": [
+          128
+        ]
+      },
+      "decoder.layers.0.sub_cross.norm.gamma": {
+        "offset": 271872,
+        "shape": [
+          128
+        ]
+      },
+      "decoder.layers.0.sub_ffn.norm.beta": {
+        "offset": 272000,
+        "shape": [
+          128
+        ]
+      },
+      "decoder.layers.0.sub_ffn.norm.gamma": {
+        "offset": 272128,
+        "shape": [
+          128
+        ]
+      },
+      "decoder.layers.0.sub_self.norm.beta": {
+        "offset": 272256,
+        "shape": [
+          128
+        ]
+      },
+      "decoder.layers.0.sub_self.norm.gamma": {
+        "offset": 272384,
+        "shape": [
+          128
+        ]
+      },
+      "decoder.layers.1.cross_attn.w_k.weight": {
+        "offset": 272512,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "decoder.layers.1.cross_attn.w_o.weight": {
+        "offset": 288896,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "decoder.layers.1.cross_attn.w_q.weight": {
+        "offset": 305280,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "decoder.layers.1.cross_attn.w_v.weight": {
+        "offset": 321664,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "decoder.layers.1.ffn.w_1.bias": {
+        "offset": 338048,
+        "shape": [
+          512
+        ]
+      },
+      "decoder.layers.1.ffn.w_1.weight": {
+        "offset": 338560,
+        "shape": [
+          512,
+          128
+        ]
+      },
+      "decoder.layers.1.ffn.w_2.bias": {
+        "offset": 404096,
+        "shape": [
+          128
+        ]
+      },
+      "decoder.layers.1.ffn.w_2.weight": {
+        "offset": 404224,
+        "shape": [
+          128,
+          512
+        ]
+      },
+      "decoder.layers.1.self_attn.w_k.weight": {
+        "offset": 469760,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "decoder.layers.1.self_attn.w_o.weight": {
+        "offset": 486144,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "decoder.layers.1.self_attn.w_q.weight": {
+        "offset": 502528,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "decoder.layers.1.self_attn.w_v.weight": {
+        "offset": 518912,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "decoder.layers.1.sub_cross.norm.beta": {
+        "offset": 535296,
+        "shape": [
+          128
+        ]
+      },
+      "decoder.layers.1.sub_cross.norm.gamma": {
+        "offset": 535424,
+        "shape": [
+          128
+        ]
+      },
+      "decoder.layers.1.sub_ffn.norm.beta": {
+        "offset": 535552,
+        "shape": [
+          128
+        ]
+      },
+      "decoder.layers.1.sub_ffn.norm.gamma": {
+        "offset": 535680,
+        "shape": [
+          128
+        ]
+      },
+      "decoder.layers.1.sub_self.norm.beta": {
+        "offset": 535808,
+        "shape": [
+          128
+        ]
+      },
+      "decoder.layers.1.sub_self.norm.gamma": {
+        "offset": 535936,
+        "shape": [
+          128
+        ]
+      },
+      "embedding.weight": {
+        "offset": 0,
+        "shape": [
+          70,
+          128
+        ],
+        "shared_with_earlier_name": true
+      },
+      "encoder.embedding.weight": {
+        "offset": 0,
+        "shape": [
+          70,
+          128
+        ],
+        "shared_with_earlier_name": true
+      },
+      "encoder.layers.0.ffn.w_1.bias": {
+        "offset": 536064,
+        "shape": [
+          512
+        ]
+      },
+      "encoder.layers.0.ffn.w_1.weight": {
+        "offset": 536576,
+        "shape": [
+          512,
+          128
+        ]
+      },
+      "encoder.layers.0.ffn.w_2.bias": {
+        "offset": 602112,
+        "shape": [
+          128
+        ]
+      },
+      "encoder.layers.0.ffn.w_2.weight": {
+        "offset": 602240,
+        "shape": [
+          128,
+          512
+        ]
+      },
+      "encoder.layers.0.self_attn.w_k.weight": {
+        "offset": 667776,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "encoder.layers.0.self_attn.w_o.weight": {
+        "offset": 684160,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "encoder.layers.0.self_attn.w_q.weight": {
+        "offset": 700544,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "encoder.layers.0.self_attn.w_v.weight": {
+        "offset": 716928,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "encoder.layers.0.sub_attn.norm.beta": {
+        "offset": 733312,
+        "shape": [
+          128
+        ]
+      },
+      "encoder.layers.0.sub_attn.norm.gamma": {
+        "offset": 733440,
+        "shape": [
+          128
+        ]
+      },
+      "encoder.layers.0.sub_ffn.norm.beta": {
+        "offset": 733568,
+        "shape": [
+          128
+        ]
+      },
+      "encoder.layers.0.sub_ffn.norm.gamma": {
+        "offset": 733696,
+        "shape": [
+          128
+        ]
+      },
+      "encoder.layers.1.ffn.w_1.bias": {
+        "offset": 733824,
+        "shape": [
+          512
+        ]
+      },
+      "encoder.layers.1.ffn.w_1.weight": {
+        "offset": 734336,
+        "shape": [
+          512,
+          128
+        ]
+      },
+      "encoder.layers.1.ffn.w_2.bias": {
+        "offset": 799872,
+        "shape": [
+          128
+        ]
+      },
+      "encoder.layers.1.ffn.w_2.weight": {
+        "offset": 800000,
+        "shape": [
+          128,
+          512
+        ]
+      },
+      "encoder.layers.1.self_attn.w_k.weight": {
+        "offset": 865536,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "encoder.layers.1.self_attn.w_o.weight": {
+        "offset": 881920,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "encoder.layers.1.self_attn.w_q.weight": {
+        "offset": 898304,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "encoder.layers.1.self_attn.w_v.weight": {
+        "offset": 914688,
+        "shape": [
+          128,
+          128
+        ]
+      },
+      "encoder.layers.1.sub_attn.norm.beta": {
+        "offset": 931072,
+        "shape": [
+          128
+        ]
+      },
+      "encoder.layers.1.sub_attn.norm.gamma": {
+        "offset": 931200,
+        "shape": [
+          128
+        ]
+      },
+      "encoder.layers.1.sub_ffn.norm.beta": {
+        "offset": 931328,
+        "shape": [
+          128
+        ]
+      },
+      "encoder.layers.1.sub_ffn.norm.gamma": {
+        "offset": 931456,
+        "shape": [
+          128
+        ]
+      },
+      "generator.weight": {
+        "offset": 0,
+        "shape": [
+          70,
+          128
+        ],
+        "shared_with_earlier_name": true
+      }
+    },
+    "total_floats": 931584,
+    "bytes": 3726336,
+    "dtype": "float32",
+    "byte_order": "little-endian",
+    "sha256": "cd915539cbad22ab8b4b7e18e3ee28573072a13375f379d779144f5ad2d46ab9"
+  },
+  "engine": "hand-written JS forward pass (decision D-003), verified against parity.json"
+}
