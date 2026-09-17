@@ -105,19 +105,24 @@
           </div>
         </article>
 
-        <article class="card">
+        <article class="card card--linked">
           <div class="card-top">
             <span class="card-num">02</span>
-            <span class="pill pill--todo">not started</span>
+            <span class="pill pill--done">live demo</span>
           </div>
-          <h3>Decoder-only GPT</h3>
+          <h3><a href="projects/p2-gpt.html">Decoder-only GPT</a></h3>
           <p>
-            Next-token training, sampling with temperature and top-<i>k</i>, resumable
-            checkpointing. A small model first; the ~124M configuration is treated as a separate
-            target with a measured cost estimate attached.
+            Byte-level BPE trained from scratch, pre-norm blocks, GPT-2's scaled residual
+            initialisation, and a <strong>KV cache</strong> that makes in-browser generation ~180×
+            cheaper per token. Temperature, top-<i>k</i> and nucleus sampling, streaming live, with
+            the model's untruncated distribution shown alongside what your settings kept.
           </p>
-          <p class="card-src">GPT-2 · nanoGPT · llm.c</p>
-          <div class="card-meta"><span class="pill pill--tier-r">Tier R planned</span></div>
+          <p class="card-src">Radford et al., GPT-2 · nanoGPT · llm.c</p>
+          <div class="card-meta">
+            <span class="pill pill--tier-e">Tier E</span>
+            <span class="pill pill--tier-r">Tier R</span>
+            <span class="pill">reuses P1 attention</span>
+          </div>
         </article>
 
         <article class="card">

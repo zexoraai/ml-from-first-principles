@@ -1,0 +1,31 @@
+
+FullName                                                                 Length
+--------                                                                 ------
+C:\Users\titus\Music\projects\runs\p1-date-post-6k\checkpoint_best.pt  11273581
+C:\Users\titus\Music\projects\runs\p1-date-post-6k\checkpoint_last.pt  11275757
+C:\Users\titus\Music\projects\runs\p1-date-post-6k\history.json           17536
+C:\Users\titus\Music\projects\runs\p1-date-post-6k\meta.json               3095
+C:\Users\titus\Music\projects\runs\p1-date-post-6k\result.json            27330
+C:\Users\titus\Music\projects\runs\p1-date-post-6k\split_manifest.json     1639
+C:\Users\titus\Music\projects\runs\p1-date-post-6k\tokenizer.json           428
+C:\Users\titus\Music\projects\runs\p2smoke\checkpoint_best.pt          34968213
+C:\Users\titus\Music\projects\runs\p2smoke\checkpoint_last.pt          34968213
+C:\Users\titus\Music\projects\runs\p2smoke\history.json                     366
+C:\Users\titus\Music\projects\runs\p2smoke\meta.json                       3433
+C:\Users\titus\Music\projects\runs\p2smoke\tokenizer.json                 16930
+
+
+
+Name             Length
+----             ------
+done.txt            144
+p2c.txt             206
+p2s.txt            2036
+p2t.txt            5560
+p2u.txt             206
+p2v.txt             206
+requirements.txt    413
+rl.txt             1142
+t6.txt             3151
+
+

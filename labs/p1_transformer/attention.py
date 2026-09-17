@@ -310,3 +310,87 @@ class MultiHeadAttention(nn.Module):
 
         self.last_attention_weights = weights.detach() if store_weights else None
         return output, weights
+
+    # ---------------------------------------------------------------------------------------
+    # incremental decoding
+    # ---------------------------------------------------------------------------------------
+    def forward_cached(
+        self,
+        x_new: torch.Tensor,
+        *,
+        past_k: torch.Tensor | None = None,
+        past_v: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Causal self-attention over a cached prefix — the KV cache.
+
+        Added as a **separate method** rather than extra arguments to `forward` on purpose: `forward`
+        is the literal transcription of the paper's equations and is what Project 1's correctness
+        suite covers. Caching is an inference optimisation with no effect on the mathematics, so it
+        gets its own entry point and its own test proving the two agree exactly.
+
+        Args:
+            x_new: (batch, n_new, d_model) — the positions not yet in the cache. `n_new == 1` during
+                incremental generation; larger when pre-filling a prompt in one pass.
+            past_k, past_v: (batch, heads, n_past, head_dim) from the previous call, or None.
+
+        Returns:
+            `(output, weights, k, v)` where `k` and `v` are the *extended* cache to pass next time.
+
+        WHY THIS IS WORTH THE EXTRA CODE PATH
+        ------------------------------------
+        Without a cache, generating token `n` re-runs the whole prefix, so producing `N` tokens costs
+        O(N²) work. Keys and values for positions already generated are **identical** on every
+        subsequent step — they depend only on their own position's input, which has not changed — so
+        recomputing them is pure waste.
+
+        For Project 2's configuration (6 layers, d_model 192, context 192) the arithmetic per new
+        token drops from roughly 550 M multiply-accumulates to about 3 M: a ~180x reduction. That is
+        the difference between a browser demo that emits a token every few seconds and one that emits
+        two hundred in three. It is not polish; it is what makes the interface usable.
+
+        What is *not* saved: the query projection, the output projection and the MLP still run for the
+        new position, and the attention itself still reads all `n_past + n_new` keys. The cache
+        removes redundant *recomputation*, not the inherent linear-in-context cost of attending.
+
+        THE CAUSAL MASK WHEN A PREFIX IS CACHED
+        ---------------------------------------
+        Query `i` of this call is at absolute position `n_past + i`, and may attend to absolute
+        positions `0 .. n_past + i`. So the mask is a *rectangular* slice of the usual triangle:
+        `keep[i, j] = j <= n_past + i`, of shape `(n_new, n_past + n_new)`.
+
+        For the common incremental case `n_new == 1` this is all-True — the single query is the newest
+        position and everything cached is strictly in its past — so no mask is built at all. Getting
+        that wrong by applying a square lower-triangular mask would silently forbid the new token from
+        seeing most of its own history.
+        """
+        if x_new.dim() != 3:
+            raise ValueError(f"expected (batch, n_new, d_model), got {tuple(x_new.shape)}")
+        if (past_k is None) != (past_v is None):
+            raise ValueError("past_k and past_v must both be given or both be None")
+
+        q = split_heads(self.w_q(x_new), self.num_heads)      # (b, h, n_new, d_k)
+        k_new = split_heads(self.w_k(x_new), self.num_heads)
+        v_new = split_heads(self.w_v(x_new), self.num_heads)
+
+        if past_k is not None:
+            k = torch.cat([past_k, k_new], dim=2)
+            v = torch.cat([past_v, v_new], dim=2)
+        else:
+            k, v = k_new, v_new
+
+        n_new = x_new.size(1)
+        n_total = k.size(2)
+        n_past = n_total - n_new
+
+        keep_mask = None
+        if n_new > 1:
+            # Rectangular causal slice: row i covers keys 0 .. n_past + i.
+            rows = torch.arange(n_new, device=x_new.device).unsqueeze(1) + n_past
+            cols = torch.arange(n_total, device=x_new.device).unsqueeze(0)
+            keep_mask = (cols <= rows)[None, None, :, :]
+
+        context, weights = scaled_dot_product_attention(
+            q, k, v, keep_mask=keep_mask,
+            dropout=self.attn_dropout if self.training else None,
+        )
+        return self.w_o(merge_heads(context)), weights, k, v

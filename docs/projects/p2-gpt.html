@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project 2 — Decoder-only GPT with a KV cache</title>
+<meta name="description" content="A decoder-only GPT built from the paper: byte-level BPE trained from scratch, pre-norm blocks, scaled residual init, a KV cache, and temperature/top-k/top-p sampling running live in your browser with verified numerical parity against PyTorch.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="masthead">
+  <div class="wrap masthead-inner">
+    <a class="brand" href="../">ml-from-first-principles<span class="brand-dim">/p2</span></a>
+    <nav class="top" aria-label="Primary">
+      <ul>
+        <li><a href="../">Projects</a></li>
+        <li><a href="p1-transformer.html">P1 Transformer</a></li>
+        <li><a href="../environment.html">Environment&nbsp;&amp;&nbsp;method</a></li>
+        <li><a href="https://github.com/zexoraai/ml-from-first-principles/tree/main/labs/p2_gpt">Source</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<div class="wrap">
+
+  <div class="hero">
+    <p><span class="pill pill--tier-e">Tier E — mechanisms</span>
+       <span class="pill pill--tier-r">Tier R — trained model</span>
+       <span class="pill" id="parity-badge">checking parity…</span></p>
+    <h1>Decoder-only GPT, with a working KV cache</h1>
+    <p class="lede">
+      A byte-level BPE tokenizer trained from scratch, pre-norm transformer blocks, GPT-2's scaled
+      residual initialisation, tied embeddings, an incremental KV cache, and the three sampling
+      controls people conflate — temperature, top-k and nucleus. All of it runs in your browser,
+      streaming, at a measured tokens-per-second you can watch.
+    </p>
+    <p class="lede small">
+      Attention is <strong>reused</strong> from <a href="p1-transformer.html">Project 1</a>, not
+      rewritten: GPT's causal self-attention is exactly the original Transformer's decoder
+      self-attention, so a second copy could only drift.
+    </p>
+  </div>
+
+  <!-- ==================================================================================== -->
+  <section aria-labelledby="q-h">
+    <h2 id="q-h">The research question</h2>
+    <p>
+      <strong>What does it take to make an autoregressive language model that is genuinely usable
+      interactively — not just trainable?</strong>
+    </p>
+    <p>
+      Project 1 established that attention works. This project is about the gap between “the maths is
+      right” and “a person can type into it and get an answer before they lose interest.” Three
+      things close that gap, and each one is a component here rather than a note:
+    </p>
+    <ul>
+      <li><strong>A tokenizer that cannot fail.</strong> Byte-level BPE has no unknown token, so no
+        input can break it — which removes an entire class of production bug.</li>
+      <li><strong>A KV cache.</strong> Without it this model needs about
+        <strong>2.7 seconds per token</strong> in a browser. With it, about
+        <strong>15 milliseconds</strong>. That is not an optimisation; it is the difference between
+        having a demo and not.</li>
+      <li><strong>Sampling controls that do what they say.</strong> Temperature, top-k and top-p act
+        on the distribution in three different ways, and the interface shows all three acting.</li>
+    </ul>
+    <div class="note">
+      <span class="note-label">What is and is not claimed</span>
+      <p>
+        Mechanisms are tier E, verified against oracles and invariants. The trained model is tier R:
+        a small GPT trained to convergence on a ~1.1 MB corpus. <strong>No GPT-2 benchmark result is
+        reproduced or claimed.</strong> The ~124M-parameter configuration exists in the code as
+        <code>GPTConfig.gpt2_small()</code> for cost estimation only, and was not trained — see
+        <a href="../environment.html">Environment&nbsp;&amp;&nbsp;method</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ==================================================================================== -->
+  <section aria-labelledby="demo-h">
+    <h2 id="demo-h">Generate</h2>
+
+    <div class="note bad" id="parity-warning" hidden>
+      <span class="note-label">Parity failure</span>
+      <p>The in-browser engine currently disagrees with the trained PyTorch model beyond tolerance.
+      Treat everything below as untrustworthy. This warning is produced automatically by the check
+      further down the page.</p>
+    </div>
+
+    <div class="note warn" id="demo-unavailable" hidden>
+      <span class="note-label">Demo not available</span>
+      <p>Model weights could not be loaded, so nothing is running on this page. Reason:
+        <code id="demo-unavailable-reason"></code></p>
+      <p class="small">This panel appears instead of a fabricated result. The implementation and its
+      tests remain browsable in the repository.</p>
+    </div>
+
+    <div id="demo-live">
+      <div class="demo">
+        <label for="prompt" style="display:block;font:600 0.76rem/1.3 var(--mono);letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.35rem;">Prompt</label>
+        <textarea id="prompt" spellcheck="false" aria-describedby="prompt-help"></textarea>
+        <p class="small muted" id="prompt-help">
+          Context is capped at 192 tokens — this model's learned position embeddings have no row
+          beyond that, so older text is genuinely unrepresentable rather than merely truncated for
+          convenience. Generation past the cap rebuilds the cache from the most recent window.
+        </p>
+        <div class="presets" id="presets"></div>
+
+        <div class="controls">
+          <div class="control">
+            <label for="ctl-temp">Temperature <span class="value" id="lbl-temp">0.80</span></label>
+            <input type="range" id="ctl-temp" min="0" max="2" step="0.05" value="0.8">
+            <span class="hint">Rescales the model's ranking without reordering it. 0 = greedy.</span>
+          </div>
+          <div class="control">
+            <label for="ctl-topk">Top-k <span class="value" id="lbl-topk">40</span></label>
+            <input type="range" id="ctl-topk" min="0" max="200" step="1" value="40">
+            <span class="hint">Keeps only the k most likely tokens. 0 disables it.</span>
+          </div>
+          <div class="control">
+            <label for="ctl-topp">Top-p <span class="value" id="lbl-topp">off</span></label>
+            <input type="range" id="ctl-topp" min="0" max="1" step="0.01" value="0">
+            <span class="hint">Nucleus: adapts its width to the model's confidence.</span>
+          </div>
+          <div class="control">
+            <label for="ctl-tokens">Max tokens <span class="value" id="lbl-tokens">200</span></label>
+            <input type="range" id="ctl-tokens" min="20" max="400" step="10" value="200">
+            <span class="hint">Bounded so a demo cannot run away.</span>
+          </div>
+          <div class="control">
+            <label for="ctl-seed">Seed</label>
+            <input type="number" id="ctl-seed" value="1234" min="0" step="1">
+            <span class="hint">Same seed and settings reproduce the same text exactly.</span>
+          </div>
+        </div>
+
+        <p class="small" id="ctl-note" style="color:var(--accent);margin-top:0.9rem"></p>
+
+        <div class="btnrow">
+          <button type="button" id="go" disabled>Generate</button>
+          <button type="button" id="stop" class="secondary" disabled>Stop</button>
+          <button type="button" id="reseed" class="secondary">Random seed</button>
+          <span class="small muted" id="live-count"></span>
+          <span class="small t-warn" id="status"></span>
+        </div>
+
+        <div id="output" aria-live="polite" aria-atomic="false"></div>
+        <p class="small muted" id="throughput"></p>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><dt>parameters</dt><dd id="m-params">—</dd></div>
+        <div class="stat"><dt>non-embedding</dt><dd id="m-vocab">—</dd></div>
+        <div class="stat"><dt>weights downloaded</dt><dd id="m-size">—</dd></div>
+        <div class="stat"><dt>architecture</dt><dd class="small" id="m-arch">—</dd></div>
+        <div class="stat"><dt>source run</dt><dd class="small" id="m-run">—</dd></div>
+      </div>
+
+      <h3>How your prompt is tokenised</h3>
+      <p>
+        The tokenizer is byte-level BPE <strong>trained from scratch on this corpus</strong> — not
+        <code>tiktoken</code>, not GPT-2's released vocabulary. Ids are ours and interchange with
+        nothing. Because it starts from the 256 byte values, every possible string is representable
+        and there is no unknown token: try pasting emoji or Japanese and watch it fragment into bytes
+        rather than fail.
+      </p>
+      <div class="demo" id="tokenisation"></div>
+
+      <h3>What the model was thinking at each step</h3>
+      <p>
+        The “model's top 5” column is the <em>untruncated</em> distribution — what the model believed
+        before your sampling settings were applied. Comparing it against the candidate count is the
+        clearest way to see what top-k and top-p actually did.
+      </p>
+      <div class="table-scroll" id="steps"></div>
+
+      <h3>Where the newest token looked</h3>
+      <div class="demo">
+        <div class="demo-row">
+          <label for="attn-layer">Layer</label><select id="attn-layer"></select>
+          <label for="attn-head">Head</label><select id="attn-head"></select>
+        </div>
+        <div id="attn"></div>
+      </div>
+      <div class="note warn">
+        <span class="note-label">These pictures are not explanations</span>
+        <p>
+          An attention row is a faithful record of one weighted average, in one head, at one layer,
+          for one input. It does <strong>not</strong> show that the information was used: the head's
+          output passes through <code>W<sup>O</sup></code>, which can project it somewhere the rest of
+          the network ignores, and the residual stream carries information around it. Establishing use
+          needs intervention — ablate the head and measure the logit change, or patch its activations
+          from a different input — not inspection. None of the numbers in Results depend on reading
+          these.
+        </p>
+      </div>
+
+      <h3>Does the browser agree with PyTorch?</h3>
+      <p>
+        Sampling is stochastic and JavaScript's PRNG cannot reproduce <code>torch.multinomial</code>,
+        so <strong>sampled text is deliberately not compared</strong> — that test would be either
+        meaningless or rigged. Everything deterministic <em>is</em> compared: raw logits, the argmax,
+        and a full greedy continuation, which compounds any drift over many steps and is exactly where
+        a cache or position bug would surface.
+      </p>
+      <div class="table-scroll" id="parity"></div>
+      <p class="small muted">
+        The same check runs headless via
+        <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/scripts/verify_js_parity.mjs"><code>scripts/verify_js_parity.mjs</code></a>,
+        so the badge is not self-reported by the code under test.
+      </p>
+    </div>
+  </section>
+
+  <!-- ==================================================================================== -->
+  <section aria-labelledby="arch-h">
+    <h2 id="arch-h">Architecture, and every place it differs from Project 1</h2>
+    <p>
+      GPT-2 is not the 2017 Transformer with the encoder deleted. Six things differ, each is a
+      deliberate choice by the GPT authors, and each is implemented here rather than glossed over.
+    </p>
+    <div class="table-scroll">
+      <table>
+        <caption>Project 1 implements arXiv:1706.03762. Project 2 implements GPT-2. Having both,
+          each cited, is the reason they are separate projects.</caption>
+        <thead><tr><th scope="col">Aspect</th><th scope="col">P1 (2017 paper)</th>
+          <th scope="col">P2 (GPT-2)</th><th scope="col">Why it matters</th></tr></thead>
+        <tbody>
+          <tr><td>Structure</td><td>encoder + decoder + cross-attention</td><td>one decoder stack</td>
+            <td>No source sequence to attend to; the prompt <em>is</em> the context.</td></tr>
+          <tr><td>Norm placement</td><td>post-norm, <code>LN(x + f(x))</code></td>
+            <td>pre-norm, <code>x + f(LN(x))</code></td>
+            <td>Pre-norm leaves an unbroken identity path, so depth trains without warmup gymnastics.</td></tr>
+          <tr><td>Final norm</td><td>none (post-norm already normalises)</td><td>required before the head</td>
+            <td>Pre-norm never normalises the residual stream, so its scale grows with depth.</td></tr>
+          <tr><td>Activation</td><td>ReLU</td><td>GELU</td>
+            <td>Smooth and non-monotonic near zero; the JS engine implements the exact <code>erf</code> form because the tanh approximation differs by ~1e-3 and would fail parity.</td></tr>
+          <tr><td>Positions</td><td>sinusoidal, unbounded</td><td>learned, capped at <code>block_size</code></td>
+            <td>A hard architectural context limit, not a buffer size.</td></tr>
+          <tr><td>Init</td><td>Xavier uniform</td><td><code>N(0, 0.02)</code>, residual projections scaled by <code>1/√(2N)</code></td>
+            <td>N blocks add 2N contributions to the residual stream; without the scaling its variance grows linearly with depth.</td></tr>
+          <tr><td>Loss</td><td>label smoothing ε=0.1</td><td>plain cross-entropy</td>
+            <td>Smoothed and unsmoothed losses are not comparable; each project matches its own paper.</td></tr>
+          <tr><td>Schedule</td><td>Noam, decays forever as <code>step<sup>-0.5</sup></code></td>
+            <td>linear warmup then cosine to <code>min_lr</code></td>
+            <td>Cosine is defined against a known horizon, so the schedule and the step budget are one decision.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>The KV cache, with the arithmetic</h3>
+    <p>
+      Keys and values for positions already generated never change — they depend only on their own
+      position's input. Recomputing them each step is pure waste, and at this model size the waste
+      dominates everything else.
+    </p>
+    <div class="table-scroll">
+      <table>
+        <caption>Multiply-accumulates per newly generated token, 6 layers, d_model 192, context 192.
+          Analytic counts, matching <code>GPT.estimate_flops_per_token</code>.</caption>
+        <thead><tr><th scope="col">Path</th><th scope="col">MACs per token</th>
+          <th scope="col">Est. browser time</th></tr></thead>
+        <tbody>
+          <tr><td>Re-encode the whole context</td><td class="num">~550 M</td><td class="num">~2.7 s</td></tr>
+          <tr><td>KV cache</td><td class="num">~3 M</td><td class="num">~15 ms</td></tr>
+          <tr><td><strong>Ratio</strong></td><td class="num"><strong>~180×</strong></td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      What the cache does <em>not</em> save: the query projection, the output projection and the MLP
+      still run for the new position, and attention still reads every cached key. It removes redundant
+      recomputation, not the inherent linear-in-context cost of attending.
+    </p>
+    <div class="note good">
+      <span class="note-label">Why this is safe to ship</span>
+      <p>
+        A cache is only sound if it changes nothing.
+        <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/tests/test_p2_cache.py"><code>tests/test_p2_cache.py</code></a>
+        requires cached and uncached generation to produce <strong>token-identical</strong> output
+        across four sampling configurations, and separately requires that feeding a sequence one token
+        at a time equals one masked pass over the whole thing.
+      </p>
+      <p>
+        The bug it exists to catch: using positions <code>0…n-1</code> for the new tokens instead of
+        <code>n_past…n_past+n-1</code>. Every generated token then gets position embedding 0, output
+        stays fluent for a few tokens and then degenerates — a failure that looks like a bad model
+        rather than a bad cache. A dedicated test pins it.
+      </p>
+    </div>
+  </section>
+
+  <!-- ==================================================================================== -->
+  <section aria-labelledby="tok-h">
+    <h2 id="tok-h">The tokenizer, trained from scratch</h2>
+    <p>
+      Byte-level BPE, following Sennrich et al. (<a href="https://arxiv.org/abs/1508.07909">arXiv:1508.07909</a>)
+      for the algorithm and GPT-2 for the byte-level variant. Start from the 256 byte values, then
+      repeatedly merge the most frequent adjacent pair. The merge list is <strong>ordered</strong>, and
+      that order is the model: encoding replays merges by rank, and applying them in any other order
+      produces different tokens for the same string, silently invalidating every checkpoint.
+    </p>
+    <ul>
+      <li><strong>No unknown token, ever.</strong> Every byte sequence is representable, so the
+        tokenizer cannot fail on an input.</li>
+      <li><strong>Pre-tokenisation stops merges crossing boundaries.</strong> Without it BPE cheerfully
+        learns a single token for <code>".\nThe"</code>, spending vocabulary on formatting artefacts.
+        A leading space stays attached to its word, which is how the model learns word boundaries
+        without a separate marker.</li>
+      <li><strong>Trained on the training split only.</strong> Fitting the merge list on the whole
+        corpus would let held-out text be represented more efficiently than genuinely unseen text —
+        a small leak, free to avoid.</li>
+      <li><strong><code>vocab_size</code> is a target, not a guarantee.</strong> A corpus can run out
+        of pairs worth merging. The model's embedding table is sized from the tokenizer's real vocab,
+        because a caller that assumed otherwise would allocate rows that can never be indexed.</li>
+    </ul>
+  </section>
+
+  <!-- ==================================================================================== -->
+  <section aria-labelledby="samp-h">
+    <h2 id="samp-h">Temperature, top-k and top-p are three different things</h2>
+    <p>
+      These get conflated constantly. Precisely:
+    </p>
+    <div class="eqmap">
+      <div class="eqmap-row">
+        <div class="eqmap-eq">p ∝ exp(z / T)
+          <div class="eqmap-where">temperature</div></div>
+        <div class="eqmap-code">
+          <p class="small">Rescales the logits. <code>T→0</code> approaches argmax; <code>T=1</code> is
+          the model unmodified; <code>T&gt;1</code> flattens. It changes <em>how sharply</em> the
+          model's ranking is followed and <strong>never reorders it</strong> — pinned by a test.
+          It also never removes a token.</p>
+        </div>
+      </div>
+      <div class="eqmap-row">
+        <div class="eqmap-eq">keep the k highest, renormalise
+          <div class="eqmap-where">top-k</div></div>
+        <div class="eqmap-code">
+          <p class="small">Truncates. Removes the long tail entirely, which is what prevents the
+          rare-but-catastrophic token. Fixed width regardless of how confident the model is.</p>
+        </div>
+      </div>
+      <div class="eqmap-row">
+        <div class="eqmap-eq">smallest set with Σp ≥ p
+          <div class="eqmap-where">top-p / nucleus</div></div>
+        <div class="eqmap-code">
+          <p class="small">Adaptive. One or two tokens when the model is confident, many when it is
+          not — usually what people actually wanted from top-k. Never empty: the token that crosses
+          the threshold is kept.</p>
+        </div>
+      </div>
+    </div>
+    <p>
+      Order of application is temperature → top-k → top-p, in both the Python and the JavaScript.
+      Truncating first would let temperature reintroduce nothing, since the removed mass is already
+      gone — so the order is load-bearing, not arbitrary.
+    </p>
+    <div class="note">
+      <span class="note-label">A real bug this project had</span>
+      <p>
+        Top-k was first implemented as <code>masked_fill(logits &lt; kth_value, -inf)</code>. That
+        keeps <em>every</em> token tied at the threshold, so <code>top_k=10</code> on a near-uniform
+        distribution returned 50 candidates. It is not a corner case: a freshly initialised model is
+        nearly uniform, so ties at the cut are the normal case early in training, and the bug
+        silently disables top-k exactly when it matters most. Both implementations now select by
+        index. Found by
+        <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/tests/test_p2_model.py"><code>test_top_p_adapts_to_confidence_where_top_k_does_not</code></a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ==================================================================================== -->
+  <section aria-labelledby="res-h">
+    <h2 id="res-h">Results</h2>
+    <div class="note warn" id="results-unavailable" hidden>
+      <span class="note-label">Results not available</span>
+      <p>The evidence file could not be loaded: <code id="results-unavailable-reason"></code>.
+        No numbers are shown rather than placeholder ones.</p>
+    </div>
+    <p>Read from the run's evidence file at page load, not typed into this page.</p>
+
+    <h3>Metric definitions, before any values</h3>
+    <ul>
+      <li><strong>validation cross-entropy</strong> — mean loss per BPE token on held-out contiguous
+        text, in nats, averaged over 200 random windows. Averaging matters: a single window is noisy
+        enough that consecutive evaluations can differ more than a real improvement.</li>
+      <li><strong>perplexity</strong> — <code>exp(loss)</code>, per <strong>BPE token</strong> on our
+        own 1024-token vocabulary trained on this corpus. <strong>It is not comparable</strong> to
+        per-character or per-word perplexity, nor to any model with a different tokenizer. Quoting it
+        against a published figure would be meaningless.</li>
+      <li><strong>train − val gap</strong> — the overfitting indicator. On a 1.1 MB corpus with ~20
+        passes over it, some gap is expected and its size is the honest thing to report.</li>
+    </ul>
+
+    <div class="table-scroll" id="results"></div>
+    <dl class="stats" id="runfacts"></dl>
+
+    <h3>Training curve</h3>
+    <div class="curve-wrap" id="curve"></div>
+
+    <h3>Samples at the end of training</h3>
+    <p class="small muted">
+      Generated at four settings with a fixed seed, recorded by the training script itself so they
+      cannot be cherry-picked afterwards. Read the high-temperature one: that is what an unbounded
+      tail looks like.
+    </p>
+    <div id="samples"></div>
+  </section>
+
+  <!-- ==================================================================================== -->
+  <section aria-labelledby="lim-h">
+    <h2 id="lim-h">Limitations</h2>
+    <ul>
+      <li><strong>The model is 2.9 M parameters trained on 1.1 MB.</strong> It learns Shakespeare's
+        <em>form</em> — speaker labels, line breaks, cadence, plausible morphology — and it does not
+        learn facts, reasoning, or long-range coherence. It is far below the scale at which those
+        appear. Judge it on form and nothing else.</li>
+      <li><strong>No GPT-2 result is reproduced.</strong> Not attempted. The 124 M configuration is in
+        the code for cost estimation only.</li>
+      <li><strong>Perplexity is tokenizer-specific</strong> and not comparable to published numbers.</li>
+      <li><strong>192-token context.</strong> Learned position embeddings cap it. Beyond that the model
+        genuinely cannot represent older text; the interface rebuilds the cache and says so.</li>
+      <li><strong>Single seed</strong>, no variance estimate.</li>
+      <li><strong>Greedy/sampled decoding only</strong> — no beam search, which is the right choice for
+        open-ended generation but is a stated absence.</li>
+      <li><strong>The corpus is one author in one register.</strong> Prompt it with modern prose (there
+        is a preset) and watch it pull everything back towards blank verse. That is the training
+        distribution asserting itself, and it is the most honest thing on the page.</li>
+      <li><strong>Timings are lower bounds</strong> — the training machine shares an unrelated
+        37-container stack (<a href="../environment.html">details</a>).</li>
+    </ul>
+  </section>
+
+  <!-- ==================================================================================== -->
+  <section aria-labelledby="repro-h">
+    <h2 id="repro-h">Reproduce it</h2>
+<pre><code>git clone https://github.com/zexoraai/ml-from-first-principles
+cd ml-from-first-principles
+docker build -t ml-labs:cpu .
+
+# correctness suite: tokenizer, model, sampling, KV cache
+.\run.cmd python -m pytest tests -q
+
+# train (downloads TinyShakespeare once; ~2 h on 6 CPU threads)
+.\run.cmd python scripts/train_p2.py --run-name p2-shake-3m --steps 1800 --warmup 150
+
+# export for the browser, with a parity fixture
+.\run.cmd python scripts/export_p2_web.py \
+    --checkpoint runs/p2-shake-3m/checkpoint_best.pt \
+    --result runs/p2-shake-3m/result.json
+
+# verify the JS engine agrees with PyTorch, headless
+node scripts/verify_js_parity.mjs</code></pre>
+
+    <h3>Evidence bundle</h3>
+    <ul>
+      <li><a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/records/EXPERIMENTS.md">Experiment register</a> — seeds, hardware, data statistics, checkpoint sha256, reproduction command</li>
+      <li><a href="../assets/models/p2/manifest.json">Model manifest</a> · <a href="../assets/models/p2/parity.json">parity fixture</a> · <a href="../assets/models/p2/results.json">run results</a> · <a href="../assets/models/p2/tokenizer.json">tokenizer</a></li>
+      <li><a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/labs/p2_gpt/tokenizer.py">tokenizer.py</a> · <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/labs/p2_gpt/model.py">model.py</a> · <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/labs/p2_gpt/sample.py">sample.py</a> · <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/labs/p2_gpt/data.py">data.py</a></li>
+      <li><a href="https://github.com/zexoraai/ml-from-first-principles/tree/main/tests">Correctness suite</a> — tokenizer round-tripping, model invariants, sampling semantics, cache equivalence</li>
+    </ul>
+
+    <h3>Data and licence</h3>
+    <p class="small">
+      TinyShakespeare: Shakespeare's works are <strong>public domain</strong>; the compilation is
+      distributed under the MIT licence of <a href="https://github.com/karpathy/char-rnn">karpathy/char-rnn</a>.
+      Nothing is scraped. The split is a contiguous 90/10 cut by character position — not a shuffle,
+      because neighbouring windows overlap almost entirely and shuffling them would put near-duplicates
+      on both sides of the split.
+    </p>
+  </section>
+
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Project 2 of eight. <a href="../">Back to the portfolio</a> ·
+      <a href="p1-transformer.html">Project 1</a> ·
+      <a href="https://github.com/zexoraai/ml-from-first-principles">Source and records</a></p>
+    <p class="small">
+      GPT-2 is the work of Radford, Wu, Child, Luan, Amodei &amp; Sutskever. nanoGPT and llm.c are
+      Andrej Karpathy's. This project implements and cites them; it does not reproduce their text or
+      their results.
+    </p>
+  </div>
+</footer>
+
+<script type="module" src="../assets/js/p2-demo.js"></script>
+</body>
+</html>

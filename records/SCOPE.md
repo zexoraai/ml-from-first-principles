@@ -115,6 +115,36 @@ independent architectures that reuse the shared training/eval/evidence infrastru
 
 ---
 
+## 2.5 The completeness standard (set 2026-09-16, applies to all eight)
+
+**These are complete projects that will be demonstrated live, not demos.** The word "demo" appears
+throughout this repository only in the sense of *the user will demo this*. It never licenses a
+reduced illustration.
+
+Concretely, for every project:
+
+| Requirement | What it rules out |
+|---|---|
+| The full method, not a sketch of it | "toy version of X" |
+| Interactive interface is a **deliverable**, not a garnish | broken states, unhandled errors, desktop-only layouts |
+| Interface must survive a hostile live audience | empty input, oversized input, missing weights, slow device, mid-generation resize |
+| Every component the paper specifies is present, or its absence is stated on the page | silently omitting beam search / a KV cache / a schedule and hoping nobody asks |
+| Real training runs on real data with recorded evidence | "we would train it like this" |
+| A hostile question has an answer in the repo | anything the user cannot defend under follow-up |
+
+The fidelity tiers in §0 still apply and are still stated honestly — completeness is about whether
+the *project* is finished, not about inflating what the *experiment* proved. A tier-E mechanism
+implemented completely, verified thoroughly, and presented in a robust interface is a complete
+project. A tier-P claim we did not earn is still forbidden.
+
+Practical consequences already adopted:
+- Interfaces get explicit failure states (P1's page renders a labelled "demo not available" panel
+  and a parity-failure warning rather than silently showing nothing).
+- Every in-browser model is parity-checked against PyTorch and the deviation is published.
+- Inputs are bounded with the reason stated ("the model's positional table", not "rate limit").
+- Failure examples are found by scanning full splits, not sampled — a sample of a 99.9%-accurate
+  model contains no failures, and "here are 24 correct outputs" is not a failure analysis.
+
 ## 3. Deliverable per project (all eight)
 
 1. Working implementation, mechanisms hand-written where the brief demands it.

@@ -305,3 +305,58 @@ ol.steps h4 { margin: 0 0 0.25rem; }
 }
 .explain-card h4 { margin-top: 0; }
 .explain-card p { font-size: 0.93rem; }
+
+/* ---------------------------------------------------------------------------------------------
+   Project 2 components: sampling controls, token strips, streaming output
+   --------------------------------------------------------------------------------------------- */
+
+textarea {
+  width: 100%; min-height: 5.5rem; resize: vertical;
+  background: var(--bg-inset); color: var(--text);
+  border: 1px solid var(--border-bright); border-radius: 6px;
+  padding: 0.7rem 0.8rem; font: 0.92rem/1.55 var(--mono);
+}
+textarea:focus { border-color: var(--accent); }
+
+.controls { display: grid; gap: 1rem 1.5rem; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); max-width: none; margin: 1.25rem 0 0; }
+.control label { display: block; font: 600 0.76rem/1.3 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.35rem; }
+.control .value { color: var(--accent); font-weight: 700; }
+.control input[type="range"] { width: 100%; accent-color: var(--accent); background: transparent; }
+.control input[type="number"] { width: 100%; }
+.control .hint { display: block; font: 400 0.76rem/1.45 var(--sans); color: var(--text-muted); margin-top: 0.3rem; }
+
+.btnrow { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-top: 1.1rem; }
+button[disabled] { opacity: 0.45; cursor: not-allowed; }
+button.secondary { background: var(--bg-inset); border-color: var(--border-bright); color: var(--text-muted); }
+button.secondary:hover:not([disabled]) { color: var(--text-bright); border-color: var(--accent); }
+
+#output {
+  white-space: pre-wrap; word-break: break-word;
+  background: var(--bg-inset); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1rem 1.1rem; margin: 1.1rem 0 0;
+  font: 0.93rem/1.62 var(--mono); min-height: 9rem; max-height: 30rem; overflow-y: auto;
+  color: var(--text-bright);
+}
+
+/* BPE token chips ---------------------------------------------------------------------------- */
+.tokstrip { display: flex; flex-wrap: wrap; gap: 3px; }
+.tok {
+  font: 0.76rem/1.5 var(--mono); padding: 1px 5px; border-radius: 3px;
+  background: #1b2432; border: 1px solid #2f3a4b; color: #b9c6da; white-space: pre;
+}
+.tok:nth-child(even) { background: #202b3b; }
+
+/* attention strip ---------------------------------------------------------------------------- */
+.attnstrip { display: flex; flex-wrap: wrap; gap: 2px; }
+.attncell {
+  font: 0.7rem/1.5 var(--mono); padding: 1px 4px; border-radius: 2px;
+  color: #eef3fa; white-space: pre; border: 1px solid rgba(255,255,255,0.06);
+}
+
+.sample { margin: 1rem 0; }
+.sample h4 { margin: 0 0 0.4rem; font: 650 0.8rem/1 var(--mono); color: var(--text-muted); letter-spacing: 0.03em; text-transform: uppercase; }
+.sample pre { margin: 0; max-height: 18rem; overflow-y: auto; white-space: pre-wrap; }
+
+.metric-strip { display: flex; flex-wrap: wrap; gap: 0.5rem 1.4rem; align-items: baseline; margin: 0.75rem 0 0; }
+.metric-strip span { font: 0.85rem/1.4 var(--mono); color: var(--text-muted); }
+.metric-strip strong { color: var(--text-bright); }
