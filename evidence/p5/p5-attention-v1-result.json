@@ -1,0 +1,919 @@
+{
+  "run_id": "p5-attention-v1",
+  "project": "p5_attention",
+  "timestamp_utc": "2026-09-17T13:36:06.012695+00:00",
+  "source_commit": "UNKNOWN",
+  "repro_cmd": ".\\run.cmd python scripts/bench_p5.py --run-name p5-attention-v1 --threads 2 --repeats 9",
+  "seeds": {
+    "torch": 0
+  },
+  "args": {
+    "run_name": "p5-attention-v1",
+    "threads": 2,
+    "repeats": 9,
+    "seed": 0
+  },
+  "hardware": {
+    "platform": "Linux-6.6.114.1-microsoft-standard-WSL2-x86_64-with-glibc2.36",
+    "host_cpu": "AMD Ryzen 5 PRO 5650U 6C/12T",
+    "torch_threads": 2,
+    "cuda_available": false,
+    "container": "built from ./Dockerfile (decision D-008)"
+  },
+  "load_at_start": {
+    "loadavg_1m": 8.05,
+    "loadavg_5m": 8.59,
+    "loadavg_15m": 8.55,
+    "n_cpu_visible": 12,
+    "load_per_cpu_1m": 0.671,
+    "mem_total_mb": 15645.1,
+    "mem_available_mb": 8518.9,
+    "contended": true,
+    "caveat": "load includes all other containers sharing the WSL2 kernel; this machine is not an isolated benchmark host"
+  },
+  "load_at_end": {
+    "loadavg_1m": 8.05,
+    "loadavg_5m": 8.58,
+    "loadavg_15m": 8.54,
+    "n_cpu_visible": 12,
+    "load_per_cpu_1m": 0.671,
+    "mem_total_mb": 15645.1,
+    "mem_available_mb": 8472.0,
+    "contended": true,
+    "caveat": "load includes all other containers sharing the WSL2 kernel; this machine is not an isolated benchmark host"
+  },
+  "exactness": {
+    "n_configurations": 40,
+    "worst_max_abs_diff": 5.960464477539062e-07,
+    "tolerance_published": 1e-05,
+    "passed": true,
+    "cases": [
+      {
+        "shape": [
+          1,
+          2,
+          64,
+          32
+        ],
+        "causal": false,
+        "q_block": 16,
+        "k_block": 16,
+        "max_abs_diff": 2.384185791015625e-07
+      },
+      {
+        "shape": [
+          1,
+          2,
+          64,
+          32
+        ],
+        "causal": false,
+        "q_block": 32,
+        "k_block": 32,
+        "max_abs_diff": 3.2782554626464844e-07
+      },
+      {
+        "shape": [
+          1,
+          2,
+          64,
+          32
+        ],
+        "causal": false,
+        "q_block": 64,
+        "k_block": 64,
+        "max_abs_diff": 4.172325134277344e-07
+      },
+      {
+        "shape": [
+          1,
+          2,
+          64,
+          32
+        ],
+        "causal": false,
+        "q_block": 128,
+        "k_block": 128,
+        "max_abs_diff": 4.172325134277344e-07
+      },
+      {
+        "shape": [
+          1,
+          2,
+          64,
+          32
+        ],
+        "causal": true,
+        "q_block": 16,
+        "k_block": 16,
+        "max_abs_diff": 4.172325134277344e-07
+      },
+      {
+        "shape": [
+          1,
+          2,
+          64,
+          32
+        ],
+        "causal": true,
+        "q_block": 32,
+        "k_block": 32,
+        "max_abs_diff": 4.172325134277344e-07
+      },
+      {
+        "shape": [
+          1,
+          2,
+          64,
+          32
+        ],
+        "causal": true,
+        "q_block": 64,
+        "k_block": 64,
+        "max_abs_diff": 4.172325134277344e-07
+      },
+      {
+        "shape": [
+          1,
+          2,
+          64,
+          32
+        ],
+        "causal": true,
+        "q_block": 128,
+        "k_block": 128,
+        "max_abs_diff": 4.172325134277344e-07
+      },
+      {
+        "shape": [
+          2,
+          4,
+          128,
+          64
+        ],
+        "causal": false,
+        "q_block": 16,
+        "k_block": 16,
+        "max_abs_diff": 4.172325134277344e-07
+      },
+      {
+        "shape": [
+          2,
+          4,
+          128,
+          64
+        ],
+        "causal": false,
+        "q_block": 32,
+        "k_block": 32,
+        "max_abs_diff": 5.364418029785156e-07
+      },
+      {
+        "shape": [
+          2,
+          4,
+          128,
+          64
+        ],
+        "causal": false,
+        "q_block": 64,
+        "k_block": 64,
+        "max_abs_diff": 4.172325134277344e-07
+      },
+      {
+        "shape": [
+          2,
+          4,
+          128,
+          64
+        ],
+        "causal": false,
+        "q_block": 128,
+        "k_block": 128,
+        "max_abs_diff": 5.364418029785156e-07
+      },
+      {
+        "shape": [
+          2,
+          4,
+          128,
+          64
+        ],
+        "causal": true,
+        "q_block": 16,
+        "k_block": 16,
+        "max_abs_diff": 4.172325134277344e-07
+      },
+      {
+        "shape": [
+          2,
+          4,
+          128,
+          64
+        ],
+        "causal": true,
+        "q_block": 32,
+        "k_block": 32,
+        "max_abs_diff": 4.172325134277344e-07
+      },
+      {
+        "shape": [
+          2,
+          4,
+          128,
+          64
+        ],
+        "causal": true,
+        "q_block": 64,
+        "k_block": 64,
+        "max_abs_diff": 4.172325134277344e-07
+      },
+      {
+        "shape": [
+          2,
+          4,
+          128,
+          64
+        ],
+        "causal": true,
+        "q_block": 128,
+        "k_block": 128,
+        "max_abs_diff": 4.172325134277344e-07
+      },
+      {
+        "shape": [
+          1,
+          8,
+          256,
+          32
+        ],
+        "causal": false,
+        "q_block": 16,
+        "k_block": 16,
+        "max_abs_diff": 4.470348358154297e-07
+      },
+      {
+        "shape": [
+          1,
+          8,
+          256,
+          32
+        ],
+        "causal": false,
+        "q_block": 32,
+        "k_block": 32,
+        "max_abs_diff": 4.172325134277344e-07
+      },
+      {
+        "shape": [
+          1,
+          8,
+          256,
+          32
+        ],
+        "causal": false,
+        "q_block": 64,
+        "k_block": 64,
+        "max_abs_diff": 3.5762786865234375e-07
+      },
+      {
+        "shape": [
+          1,
+          8,
+          256,
+          32
+        ],
+        "causal": false,
+        "q_block": 128,
+        "k_block": 128,
+        "max_abs_diff": 3.5762786865234375e-07
+      },
+      {
+        "shape": [
+          1,
+          8,
+          256,
+          32
+        ],
+        "causal": true,
+        "q_block": 16,
+        "k_block": 16,
+        "max_abs_diff": 5.960464477539062e-07
+      },
+      {
+        "shape": [
+          1,
+          8,
+          256,
+          32
+        ],
+        "causal": true,
+        "q_block": 32,
+        "k_block": 32,
+        "max_abs_diff": 5.960464477539062e-07
+      },
+      {
+        "shape": [
+          1,
+          8,
+          256,
+          32
+        ],
+        "causal": true,
+        "q_block": 64,
+        "k_block": 64,
+        "max_abs_diff": 4.76837158203125e-07
+      },
+      {
+        "shape": [
+          1,
+          8,
+          256,
+          32
+        ],
+        "causal": true,
+        "q_block": 128,
+        "k_block": 128,
+        "max_abs_diff": 4.76837158203125e-07
+      },
+      {
+        "shape": [
+          1,
+          2,
+          100,
+          64
+        ],
+        "causal": false,
+        "q_block": 16,
+        "k_block": 16,
+        "max_abs_diff": 2.980232238769531e-07
+      },
+      {
+        "shape": [
+          1,
+          2,
+          100,
+          64
+        ],
+        "causal": false,
+        "q_block": 32,
+        "k_block": 32,
+        "max_abs_diff": 3.5762786865234375e-07
+      },
+      {
+        "shape": [
+          1,
+          2,
+          100,
+          64
+        ],
+        "causal": false,
+        "q_block": 64,
+        "k_block": 64,
+        "max_abs_diff": 4.172325134277344e-07
+      },
+      {
+        "shape": [
+          1,
+          2,
+          100,
+          64
+        ],
+        "causal": false,
+        "q_block": 128,
+        "k_block": 128,
+        "max_abs_diff": 4.172325134277344e-07
+      },
+      {
+        "shape": [
+          1,
+          2,
+          100,
+          64
+        ],
+        "causal": true,
+        "q_block": 16,
+        "k_block": 16,
+        "max_abs_diff": 4.76837158203125e-07
+      },
+      {
+        "shape": [
+          1,
+          2,
+          100,
+          64
+        ],
+        "causal": true,
+        "q_block": 32,
+        "k_block": 32,
+        "max_abs_diff": 4.76837158203125e-07
+      },
+      {
+        "shape": [
+          1,
+          2,
+          100,
+          64
+        ],
+        "causal": true,
+        "q_block": 64,
+        "k_block": 64,
+        "max_abs_diff": 4.76837158203125e-07
+      },
+      {
+        "shape": [
+          1,
+          2,
+          100,
+          64
+        ],
+        "causal": true,
+        "q_block": 128,
+        "k_block": 128,
+        "max_abs_diff": 4.76837158203125e-07
+      },
+      {
+        "shape": [
+          1,
+          1,
+          7,
+          16
+        ],
+        "causal": false,
+        "q_block": 16,
+        "k_block": 16,
+        "max_abs_diff": 2.384185791015625e-07
+      },
+      {
+        "shape": [
+          1,
+          1,
+          7,
+          16
+        ],
+        "causal": false,
+        "q_block": 32,
+        "k_block": 32,
+        "max_abs_diff": 2.384185791015625e-07
+      },
+      {
+        "shape": [
+          1,
+          1,
+          7,
+          16
+        ],
+        "causal": false,
+        "q_block": 64,
+        "k_block": 64,
+        "max_abs_diff": 2.384185791015625e-07
+      },
+      {
+        "shape": [
+          1,
+          1,
+          7,
+          16
+        ],
+        "causal": false,
+        "q_block": 128,
+        "k_block": 128,
+        "max_abs_diff": 2.384185791015625e-07
+      },
+      {
+        "shape": [
+          1,
+          1,
+          7,
+          16
+        ],
+        "causal": true,
+        "q_block": 16,
+        "k_block": 16,
+        "max_abs_diff": 1.1920928955078125e-07
+      },
+      {
+        "shape": [
+          1,
+          1,
+          7,
+          16
+        ],
+        "causal": true,
+        "q_block": 32,
+        "k_block": 32,
+        "max_abs_diff": 1.1920928955078125e-07
+      },
+      {
+        "shape": [
+          1,
+          1,
+          7,
+          16
+        ],
+        "causal": true,
+        "q_block": 64,
+        "k_block": 64,
+        "max_abs_diff": 1.1920928955078125e-07
+      },
+      {
+        "shape": [
+          1,
+          1,
+          7,
+          16
+        ],
+        "causal": true,
+        "q_block": 128,
+        "k_block": 128,
+        "max_abs_diff": 1.1920928955078125e-07
+      }
+    ]
+  },
+  "memory_scaling": [
+    {
+      "seq_len": 128,
+      "reference_score_matrix_bytes": 786432,
+      "tiled_peak_tile_bytes": 196608,
+      "reduction_factor": 4.0,
+      "qkv_bytes": 1179648,
+      "output_bytes": 393216,
+      "reference_total_bytes": 2359296,
+      "tiled_total_bytes": 1769472,
+      "note": "Score-matrix storage only for the two *_score_* figures; Q/K/V and the output are identical in both methods and are listed separately so the ratio is not inflated by omitting them. A backward pass through the naive formulation also needs the probability matrix, so its practical peak is about double reference_score_matrix_bytes. Analytic byte counts, not measured allocator peaks \u2014 on CPU the allocator is shared with the container and a measured peak would be dominated by unrelated load (G-008)."
+    },
+    {
+      "seq_len": 512,
+      "reference_score_matrix_bytes": 12582912,
+      "tiled_peak_tile_bytes": 196608,
+      "reduction_factor": 64.0,
+      "qkv_bytes": 4718592,
+      "output_bytes": 1572864,
+      "reference_total_bytes": 18874368,
+      "tiled_total_bytes": 6488064,
+      "note": "Score-matrix storage only for the two *_score_* figures; Q/K/V and the output are identical in both methods and are listed separately so the ratio is not inflated by omitting them. A backward pass through the naive formulation also needs the probability matrix, so its practical peak is about double reference_score_matrix_bytes. Analytic byte counts, not measured allocator peaks \u2014 on CPU the allocator is shared with the container and a measured peak would be dominated by unrelated load (G-008)."
+    },
+    {
+      "seq_len": 1024,
+      "reference_score_matrix_bytes": 50331648,
+      "tiled_peak_tile_bytes": 196608,
+      "reduction_factor": 256.0,
+      "qkv_bytes": 9437184,
+      "output_bytes": 3145728,
+      "reference_total_bytes": 62914560,
+      "tiled_total_bytes": 12779520,
+      "note": "Score-matrix storage only for the two *_score_* figures; Q/K/V and the output are identical in both methods and are listed separately so the ratio is not inflated by omitting them. A backward pass through the naive formulation also needs the probability matrix, so its practical peak is about double reference_score_matrix_bytes. Analytic byte counts, not measured allocator peaks \u2014 on CPU the allocator is shared with the container and a measured peak would be dominated by unrelated load (G-008)."
+    },
+    {
+      "seq_len": 2048,
+      "reference_score_matrix_bytes": 201326592,
+      "tiled_peak_tile_bytes": 196608,
+      "reduction_factor": 1024.0,
+      "qkv_bytes": 18874368,
+      "output_bytes": 6291456,
+      "reference_total_bytes": 226492416,
+      "tiled_total_bytes": 25362432,
+      "note": "Score-matrix storage only for the two *_score_* figures; Q/K/V and the output are identical in both methods and are listed separately so the ratio is not inflated by omitting them. A backward pass through the naive formulation also needs the probability matrix, so its practical peak is about double reference_score_matrix_bytes. Analytic byte counts, not measured allocator peaks \u2014 on CPU the allocator is shared with the container and a measured peak would be dominated by unrelated load (G-008)."
+    },
+    {
+      "seq_len": 4096,
+      "reference_score_matrix_bytes": 805306368,
+      "tiled_peak_tile_bytes": 196608,
+      "reduction_factor": 4096.0,
+      "qkv_bytes": 37748736,
+      "output_bytes": 12582912,
+      "reference_total_bytes": 855638016,
+      "tiled_total_bytes": 50528256,
+      "note": "Score-matrix storage only for the two *_score_* figures; Q/K/V and the output are identical in both methods and are listed separately so the ratio is not inflated by omitting them. A backward pass through the naive formulation also needs the probability matrix, so its practical peak is about double reference_score_matrix_bytes. Analytic byte counts, not measured allocator peaks \u2014 on CPU the allocator is shared with the container and a measured peak would be dominated by unrelated load (G-008)."
+    },
+    {
+      "seq_len": 8192,
+      "reference_score_matrix_bytes": 3221225472,
+      "tiled_peak_tile_bytes": 196608,
+      "reduction_factor": 16384.0,
+      "qkv_bytes": 75497472,
+      "output_bytes": 25165824,
+      "reference_total_bytes": 3321888768,
+      "tiled_total_bytes": 100859904,
+      "note": "Score-matrix storage only for the two *_score_* figures; Q/K/V and the output are identical in both methods and are listed separately so the ratio is not inflated by omitting them. A backward pass through the naive formulation also needs the probability matrix, so its practical peak is about double reference_score_matrix_bytes. Analytic byte counts, not measured allocator peaks \u2014 on CPU the allocator is shared with the container and a measured peak would be dominated by unrelated load (G-008)."
+    },
+    {
+      "seq_len": 16384,
+      "reference_score_matrix_bytes": 12884901888,
+      "tiled_peak_tile_bytes": 196608,
+      "reduction_factor": 65536.0,
+      "qkv_bytes": 150994944,
+      "output_bytes": 50331648,
+      "reference_total_bytes": 13086228480,
+      "tiled_total_bytes": 201523200,
+      "note": "Score-matrix storage only for the two *_score_* figures; Q/K/V and the output are identical in both methods and are listed separately so the ratio is not inflated by omitting them. A backward pass through the naive formulation also needs the probability matrix, so its practical peak is about double reference_score_matrix_bytes. Analytic byte counts, not measured allocator peaks \u2014 on CPU the allocator is shared with the container and a measured peak would be dominated by unrelated load (G-008)."
+    }
+  ],
+  "cpu_timing": [
+    {
+      "seq_len": 128,
+      "reference": {
+        "median_s": 0.0005046120022598188,
+        "min_s": 0.0004731880035251379,
+        "max_s": 0.000811522997537395,
+        "stdev_s": 0.0001155126271224935,
+        "cv": 0.22891375275496795,
+        "samples_s": [
+          0.000811522997537395,
+          0.0006131419977464247,
+          0.000535383998794714,
+          0.0005046120022598188,
+          0.00047340799937956035,
+          0.00047338799777207896,
+          0.0004731880035251379,
+          0.00047859899859759025,
+          0.0006489240004157182
+        ],
+        "repeats": 9
+      },
+      "tiled": {
+        "median_s": 0.0017234189981536474,
+        "min_s": 0.0014619499997934327,
+        "max_s": 0.002286001999891596,
+        "stdev_s": 0.0002481430259352925,
+        "cv": 0.14398299322517383,
+        "samples_s": [
+          0.0018632629980857018,
+          0.001852000001235865,
+          0.0014619499997934327,
+          0.0018197639983554836,
+          0.0015219820015772711,
+          0.0015654490016459022,
+          0.0017234189981536474,
+          0.0016635279971524142,
+          0.002286001999891596
+        ],
+        "repeats": 9
+      },
+      "tiled_over_reference": 3.4153349314634,
+      "ratio_noise_floor": 0.9236104377103052,
+      "difference_is_resolvable": true,
+      "verdict": "tiled slower"
+    },
+    {
+      "seq_len": 256,
+      "reference": {
+        "median_s": 0.006096779001381947,
+        "min_s": 0.002621427000121912,
+        "max_s": 0.010426970999105833,
+        "stdev_s": 0.002548797641625989,
+        "cv": 0.41805642636025636,
+        "samples_s": [
+          0.006096779001381947,
+          0.002897186001064256,
+          0.002621427000121912,
+          0.004513569001574069,
+          0.004857474999880651,
+          0.0067922819980594795,
+          0.008080501000222284,
+          0.0076882959983777255,
+          0.010426970999105833
+        ],
+        "repeats": 9
+      },
+      "tiled": {
+        "median_s": 0.016751008002756862,
+        "min_s": 0.005752987999585457,
+        "max_s": 0.024256299002445303,
+        "stdev_s": 0.007259455826528892,
+        "cv": 0.43337426770580845,
+        "samples_s": [
+          0.024256299002445303,
+          0.0176612080031191,
+          0.016751008002756862,
+          0.023199978000775445,
+          0.012464100000215694,
+          0.008028308999200817,
+          0.005752987999585457,
+          0.007823480002116412,
+          0.023273835999134462
+        ],
+        "repeats": 9
+      },
+      "tiled_over_reference": 2.747517664484794,
+      "ratio_noise_floor": 1.6544173259876123,
+      "difference_is_resolvable": false,
+      "verdict": "INDISTINGUISHABLE \u2014 noise exceeds the effect on this host"
+    },
+    {
+      "seq_len": 512,
+      "reference": {
+        "median_s": 0.014610872000048403,
+        "min_s": 0.01126932699844474,
+        "max_s": 0.02257611400273163,
+        "stdev_s": 0.004256985616427297,
+        "cv": 0.2913573958086276,
+        "samples_s": [
+          0.020423990998096997,
+          0.021751590000349097,
+          0.016434823999588843,
+          0.01126932699844474,
+          0.01330498200331931,
+          0.013209308999648783,
+          0.02257611400273163,
+          0.014610872000048403,
+          0.012811783999495674
+        ],
+        "repeats": 9
+      },
+      "tiled": {
+        "median_s": 0.0366212250009994,
+        "min_s": 0.021922244002780644,
+        "max_s": 0.049019366000720765,
+        "stdev_s": 0.008281935151266559,
+        "cv": 0.2261512319983983,
+        "samples_s": [
+          0.03298563799762633,
+          0.03543304599952535,
+          0.021922244002780644,
+          0.03758483600176987,
+          0.034635193998838076,
+          0.0366212250009994,
+          0.04872910800258978,
+          0.04119784100112156,
+          0.049019366000720765
+        ],
+        "repeats": 9
+      },
+      "tiled_over_reference": 2.5064366453198743,
+      "ratio_noise_floor": 0.9244420383002977,
+      "difference_is_resolvable": false,
+      "verdict": "INDISTINGUISHABLE \u2014 noise exceeds the effect on this host"
+    },
+    {
+      "seq_len": 1024,
+      "reference": {
+        "median_s": 0.11531651400218834,
+        "min_s": 0.09450019799987786,
+        "max_s": 0.163845543997013,
+        "stdev_s": 0.02375848650111274,
+        "cv": 0.20602848348903333,
+        "samples_s": [
+          0.13721242099927622,
+          0.1224448860011762,
+          0.1417195840003842,
+          0.163845543997013,
+          0.09464792799917632,
+          0.10566857099911431,
+          0.102695721998316,
+          0.11531651400218834,
+          0.09450019799987786
+        ],
+        "repeats": 9
+      },
+      "tiled": {
+        "median_s": 0.13650214100198355,
+        "min_s": 0.08032322600047337,
+        "max_s": 0.3553307059992221,
+        "stdev_s": 0.08517724134587758,
+        "cv": 0.6239993066822289,
+        "samples_s": [
+          0.08032322600047337,
+          0.09285136999824317,
+          0.13650214100198355,
+          0.16335048000109964,
+          0.2151495590005652,
+          0.3553307059992221,
+          0.15235199100061436,
+          0.12460215999817592,
+          0.09535866700025508
+        ],
+        "repeats": 9
+      },
+      "tiled_over_reference": 1.1837171994237805,
+      "ratio_noise_floor": 0.7778588157551581,
+      "difference_is_resolvable": false,
+      "verdict": "INDISTINGUISHABLE \u2014 noise exceeds the effect on this host"
+    }
+  ],
+  "causal_skipping": [
+    {
+      "seq_len": 128,
+      "n_query_tiles": 2,
+      "n_key_tiles": 2,
+      "computed": 3,
+      "skipped": 1,
+      "fraction_skipped": 0.25
+    },
+    {
+      "seq_len": 512,
+      "n_query_tiles": 8,
+      "n_key_tiles": 8,
+      "computed": 36,
+      "skipped": 28,
+      "fraction_skipped": 0.4375
+    },
+    {
+      "seq_len": 1024,
+      "n_query_tiles": 16,
+      "n_key_tiles": 16,
+      "computed": 136,
+      "skipped": 120,
+      "fraction_skipped": 0.46875
+    }
+  ],
+  "analytic_gpu_model": [
+    {
+      "seq_len": 512,
+      "flops": 805306368,
+      "standard_hbm_bytes": 28311552,
+      "flash_hbm_bytes": 14155776,
+      "traffic_reduction_factor": 2.0,
+      "standard_arithmetic_intensity_flops_per_byte": 28.444444444444443,
+      "flash_arithmetic_intensity_flops_per_byte": 56.888888888888886,
+      "n_query_blocks": 8,
+      "note": "Analytic model, not a measurement. FLOPs are essentially identical between the two methods \u2014 FlashAttention does slightly MORE arithmetic. The difference is HBM traffic, which is why the comparison is framed as arithmetic intensity. FlashAttention's traffic GROWS with the number of query blocks because K and V are re-read per block: the win is not unconditional, and at very small sequence lengths with many query blocks standard attention moves less data.",
+      "why_the_ratio_may_look_suspiciously_flat": "The dominant terms are 4\u00b7B\u00b7H\u00b7T\u00b2\u00b7e for standard attention (write S, read S, write P, read P) against 2\u00b7B\u00b7H\u00b7T\u00b2\u00b7d\u00b7e/block_m for FlashAttention (re-read K and V once per query block). Their ratio is 2\u00b7block_m/d \u2014 independent of T. So whenever block_m == d the model reports almost exactly 2.00x at every sequence length, which is arithmetic, not a bug. Vary block_m or head_dim and the ratio moves. This also shows the model's limit: it predicts a T-independent constant, whereas measured FlashAttention speedups on real GPUs do grow with T. The gap is everything this first-order account omits \u2014 L2 cache reuse, occupancy, the backward pass's recomputation, and the fact that a large S matrix stops fitting in any cache at all. Treat the 2x as a floor on the traffic argument, not as a predicted speedup.",
+      "ratio_identity": "2 * block_m / head_dim (for the T\u00b2 terms)"
+    },
+    {
+      "seq_len": 1024,
+      "flops": 3221225472,
+      "standard_hbm_bytes": 106954752,
+      "flash_hbm_bytes": 53477376,
+      "traffic_reduction_factor": 2.0,
+      "standard_arithmetic_intensity_flops_per_byte": 30.11764705882353,
+      "flash_arithmetic_intensity_flops_per_byte": 60.23529411764706,
+      "n_query_blocks": 16,
+      "note": "Analytic model, not a measurement. FLOPs are essentially identical between the two methods \u2014 FlashAttention does slightly MORE arithmetic. The difference is HBM traffic, which is why the comparison is framed as arithmetic intensity. FlashAttention's traffic GROWS with the number of query blocks because K and V are re-read per block: the win is not unconditional, and at very small sequence lengths with many query blocks standard attention moves less data.",
+      "why_the_ratio_may_look_suspiciously_flat": "The dominant terms are 4\u00b7B\u00b7H\u00b7T\u00b2\u00b7e for standard attention (write S, read S, write P, read P) against 2\u00b7B\u00b7H\u00b7T\u00b2\u00b7d\u00b7e/block_m for FlashAttention (re-read K and V once per query block). Their ratio is 2\u00b7block_m/d \u2014 independent of T. So whenever block_m == d the model reports almost exactly 2.00x at every sequence length, which is arithmetic, not a bug. Vary block_m or head_dim and the ratio moves. This also shows the model's limit: it predicts a T-independent constant, whereas measured FlashAttention speedups on real GPUs do grow with T. The gap is everything this first-order account omits \u2014 L2 cache reuse, occupancy, the backward pass's recomputation, and the fact that a large S matrix stops fitting in any cache at all. Treat the 2x as a floor on the traffic argument, not as a predicted speedup.",
+      "ratio_identity": "2 * block_m / head_dim (for the T\u00b2 terms)"
+    },
+    {
+      "seq_len": 2048,
+      "flops": 12884901888,
+      "standard_hbm_bytes": 415236096,
+      "flash_hbm_bytes": 207618048,
+      "traffic_reduction_factor": 2.0,
+      "standard_arithmetic_intensity_flops_per_byte": 31.03030303030303,
+      "flash_arithmetic_intensity_flops_per_byte": 62.06060606060606,
+      "n_query_blocks": 32,
+      "note": "Analytic model, not a measurement. FLOPs are essentially identical between the two methods \u2014 FlashAttention does slightly MORE arithmetic. The difference is HBM traffic, which is why the comparison is framed as arithmetic intensity. FlashAttention's traffic GROWS with the number of query blocks because K and V are re-read per block: the win is not unconditional, and at very small sequence lengths with many query blocks standard attention moves less data.",
+      "why_the_ratio_may_look_suspiciously_flat": "The dominant terms are 4\u00b7B\u00b7H\u00b7T\u00b2\u00b7e for standard attention (write S, read S, write P, read P) against 2\u00b7B\u00b7H\u00b7T\u00b2\u00b7d\u00b7e/block_m for FlashAttention (re-read K and V once per query block). Their ratio is 2\u00b7block_m/d \u2014 independent of T. So whenever block_m == d the model reports almost exactly 2.00x at every sequence length, which is arithmetic, not a bug. Vary block_m or head_dim and the ratio moves. This also shows the model's limit: it predicts a T-independent constant, whereas measured FlashAttention speedups on real GPUs do grow with T. The gap is everything this first-order account omits \u2014 L2 cache reuse, occupancy, the backward pass's recomputation, and the fact that a large S matrix stops fitting in any cache at all. Treat the 2x as a floor on the traffic argument, not as a predicted speedup.",
+      "ratio_identity": "2 * block_m / head_dim (for the T\u00b2 terms)"
+    },
+    {
+      "seq_len": 4096,
+      "flops": 51539607552,
+      "standard_hbm_bytes": 1635778560,
+      "flash_hbm_bytes": 817889280,
+      "traffic_reduction_factor": 2.0,
+      "standard_arithmetic_intensity_flops_per_byte": 31.50769230769231,
+      "flash_arithmetic_intensity_flops_per_byte": 63.01538461538462,
+      "n_query_blocks": 64,
+      "note": "Analytic model, not a measurement. FLOPs are essentially identical between the two methods \u2014 FlashAttention does slightly MORE arithmetic. The difference is HBM traffic, which is why the comparison is framed as arithmetic intensity. FlashAttention's traffic GROWS with the number of query blocks because K and V are re-read per block: the win is not unconditional, and at very small sequence lengths with many query blocks standard attention moves less data.",
+      "why_the_ratio_may_look_suspiciously_flat": "The dominant terms are 4\u00b7B\u00b7H\u00b7T\u00b2\u00b7e for standard attention (write S, read S, write P, read P) against 2\u00b7B\u00b7H\u00b7T\u00b2\u00b7d\u00b7e/block_m for FlashAttention (re-read K and V once per query block). Their ratio is 2\u00b7block_m/d \u2014 independent of T. So whenever block_m == d the model reports almost exactly 2.00x at every sequence length, which is arithmetic, not a bug. Vary block_m or head_dim and the ratio moves. This also shows the model's limit: it predicts a T-independent constant, whereas measured FlashAttention speedups on real GPUs do grow with T. The gap is everything this first-order account omits \u2014 L2 cache reuse, occupancy, the backward pass's recomputation, and the fact that a large S matrix stops fitting in any cache at all. Treat the 2x as a floor on the traffic argument, not as a predicted speedup.",
+      "ratio_identity": "2 * block_m / head_dim (for the T\u00b2 terms)"
+    },
+    {
+      "seq_len": 8192,
+      "flops": 206158430208,
+      "standard_hbm_bytes": 6492782592,
+      "flash_hbm_bytes": 3246391296,
+      "traffic_reduction_factor": 2.0,
+      "standard_arithmetic_intensity_flops_per_byte": 31.751937984496124,
+      "flash_arithmetic_intensity_flops_per_byte": 63.50387596899225,
+      "n_query_blocks": 128,
+      "note": "Analytic model, not a measurement. FLOPs are essentially identical between the two methods \u2014 FlashAttention does slightly MORE arithmetic. The difference is HBM traffic, which is why the comparison is framed as arithmetic intensity. FlashAttention's traffic GROWS with the number of query blocks because K and V are re-read per block: the win is not unconditional, and at very small sequence lengths with many query blocks standard attention moves less data.",
+      "why_the_ratio_may_look_suspiciously_flat": "The dominant terms are 4\u00b7B\u00b7H\u00b7T\u00b2\u00b7e for standard attention (write S, read S, write P, read P) against 2\u00b7B\u00b7H\u00b7T\u00b2\u00b7d\u00b7e/block_m for FlashAttention (re-read K and V once per query block). Their ratio is 2\u00b7block_m/d \u2014 independent of T. So whenever block_m == d the model reports almost exactly 2.00x at every sequence length, which is arithmetic, not a bug. Vary block_m or head_dim and the ratio moves. This also shows the model's limit: it predicts a T-independent constant, whereas measured FlashAttention speedups on real GPUs do grow with T. The gap is everything this first-order account omits \u2014 L2 cache reuse, occupancy, the backward pass's recomputation, and the fact that a large S matrix stops fitting in any cache at all. Treat the 2x as a floor on the traffic argument, not as a predicted speedup.",
+      "ratio_identity": "2 * block_m / head_dim (for the T\u00b2 terms)"
+    }
+  ],
+  "triton_kernel": {
+    "authored": true,
+    "compiled": false,
+    "executed": false,
+    "verified_against_reference": false,
+    "benchmarked": false,
+    "reason": "no CUDA device on the development machine (GAPS G-001); Triton requires one",
+    "decision": "D-004 \u2014 Triton authored locally, executed externally",
+    "acceptance_test": "labs.p5_attention.triton_kernel.verify_against_reference",
+    "expectation_when_first_run": "failure is more likely than success. An unrun kernel of this length almost always has at least one indexing or masking bug. The acceptance test exists to find them, not to rubber-stamp the code."
+  },
+  "metric_definitions": {
+    "max_abs_diff": "largest absolute elementwise difference between tiled and naive attention outputs. Nonzero only because float32 addition is not associative and tiling reassociates the sums.",
+    "reduction_factor": "reference score-matrix bytes / peak tile bytes. Analytic.",
+    "tiled_over_reference": "median tiled wall-clock / median reference wall-clock. Values above 1.0 mean tiling is SLOWER, which is the expected result on CPU.",
+    "arithmetic_intensity": "FLOPs per byte of HBM traffic, from the analytic model. Higher is better on a bandwidth-bound problem."
+  },
+  "findings": [
+    "Tiled attention is numerically EXACT against the naive reference to within float32 reassociation error, across every shape and tile size tested.",
+    "Score-matrix memory falls from O(T^2) to O(block^2), independent of sequence length.",
+    "Causal tile skipping removes close to half the tiles at every sequence length tested.",
+    "Tiled attention is NOT faster than standard attention on this CPU. That is the expected structural result, not a defect: FlashAttention trades extra arithmetic for reduced traffic between GPU HBM and SRAM. A CPU has no such hierarchy to exploit, the tile loop runs in interpreted Python, and one large torch.matmul already reaches well-tuned multithreaded BLAS. Reporting a CPU speedup here would mean having measured something other than what was claimed.",
+    "MORE IMPORTANTLY: the CPU timing on this host CANNOT RESOLVE the difference at larger sequence lengths. Two identical invocations produced ratios of 5.56x and 1.01x at T=512. The run-to-run variance exceeds the effect size, so the per-shape 'verdict' field is 'INDISTINGUISHABLE' wherever the noise floor swallows the ratio. The correct conclusion from this host is 'no speed claim can be made in either direction', not 'tiling is Nx slower'. This is a property of the measurement environment (G-008), not of the algorithm."
+  ],
+  "limitations": [
+    "Tier E for the online-softmax identity and the tiled PyTorch implementation. NO tier is claimed for the Triton kernel, which has never been compiled or executed (G-001, D-004).",
+    "No speedup is claimed anywhere in this project. The wall-clock numbers show tiling losing on CPU, which is correct and expected.",
+    "Memory figures are ANALYTIC byte counts, not measured allocator peaks. On CPU the allocator is shared with the container and a measured peak would be dominated by unrelated load (G-008).",
+    "Timings are upper bounds on speed / lower bounds on time: the machine runs an unrelated container stack throughout (G-008). A second training job was active during development.",
+    "The analytic HBM model is a first-order account of traffic. It ignores L2 cache, occupancy, tensor-core utilisation and kernel launch overhead, any of which can dominate in practice. It explains WHY FlashAttention wins on a GPU; it is not evidence that this kernel does.",
+    "The tiled implementation relies on autograd for its backward pass. FlashAttention's hand-written backward, which recomputes the score matrix instead of storing it, is implemented only in the unexecuted Triton kernel path."
+  ]
+}
