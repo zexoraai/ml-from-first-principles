@@ -1,0 +1,4 @@
+{
+  "type": "module",
+  "_comment": "Marks the .js files in this directory as ES modules for Node. Browsers already treat them as modules because they are loaded with <script type=\"module\">; this file exists so `scripts/verify_js_parity.mjs` can import p1-engine.js directly and run the same parity check outside a browser. Without it Node reads .js as CommonJS and rejects the export statement."
+}

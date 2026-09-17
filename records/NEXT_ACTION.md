@@ -5,50 +5,48 @@ context compaction.
 
 ---
 
-## Awaiting user input
+## Project 1 is COMPLETE
 
-**Visual confirmation of the interface** before it is expanded further (brief §8). Live now:
+Live and verified:
 
-- https://zexoraai.github.io/ml-from-first-principles/
-- https://zexoraai.github.io/ml-from-first-principles/environment.html
+- https://zexoraai.github.io/ml-from-first-principles/ — portfolio home
+- https://zexoraai.github.io/ml-from-first-principles/environment.html — measured environment
+- https://zexoraai.github.io/ml-from-first-principles/projects/p1-transformer.html — **Project 1**
 
-Both verified by fetch. The design language established here (dark technical palette, fidelity-tier
-pills, status pills, evidence tables, callout boxes for rejected/accepted decisions) is what all
-eight project pages will inherit, so it is cheaper to change now than after eight pages exist.
+Delivered: 161 passing tests · trained model at **99.94% test exact-match** (run
+`p1-date-post-6k`) · live in-browser inference with parity verified to 5.3e-7 · attention head
+viewer · 14-step teaching document · mastery pack with separate answer notes · full evidence
+register entry.
+
+**Not delivered, deliberately:** any tier-P claim, any beam search, any KV cache, any validated
+interpretability claim, more than one seed. All recorded in GAPS.
 
 ---
 
-## Active on approval
+## Active
 
-**M1.2 — P1 T2: encoder–decoder assembly + single-batch overfit proof.**
+**Nothing.** Awaiting direction on whether to start Project 2 (decoder-only GPT).
 
-Exact behaviour being completed: a full `Transformer` module assembled from the T1 mechanisms
-performs a forward pass with correct masking, and a training loop drives the loss on **one fixed
-batch** to near zero, then greedy-decodes that batch exactly. This is the cheapest possible proof
-that forward, loss, backward and masking are all wired correctly — before spending an hour on real
-training and mistaking a wiring bug for a hard task.
+P2 is the natural next step and reuses P1's attention module directly. Before starting it, three
+things are worth resolving:
 
-Definition of done:
-- [ ] `model.py`: `EncoderLayer`, `DecoderLayer`, `Encoder`, `Decoder`, `Transformer`
-- [ ] Embedding scaling by `sqrt(d_model)` and the three-way weight tying of §3.4, behind a flag
-- [ ] `generate.py`: greedy decode with an incremental causal mask
-- [ ] `optim.py`: the §5.3 warmup schedule `d_model**-0.5 * min(step**-0.5, step * warmup**-1.5)`
-      and §5.4 label smoothing, both hand-written
-- [ ] Test: parameter count matches a hand-derived formula (catches silent shape errors)
-- [ ] Test: overfit 8 examples to loss < 0.01 and exact greedy match
-- [ ] Test: decoder output at position `i` is invariant to target tokens `> i` (autoregression held
-      end-to-end through the full stack, not just one attention module)
-- [ ] Test: pre-norm vs post-norm both train; record the difference as a real observation
-- [ ] Thread count pinned to 2 for training (measured optimum, EXPERIMENTS env-bench-02)
+1. **Q2/Q3 (Colab / GPU budget)** still unanswered. They do not block P2's small model but they
+   determine whether the ~124 M target is attempted or documented.
+2. **The P1 mastery pack is written and unused.** `records/PROGRESS.md`'s mastery ledger is entirely
+   "not yet". Implementation is complete; understanding is unverified. Per the brief, these are
+   tracked separately and a finished project is not an understood one. Running the day-0 questions
+   (A1, A3, A6 + B1 + C1) before moving on would keep the two in step.
+3. **The late-training instability in `p1-date-post-6k` is unexplained.** Val exact-match hit 1.0000
+   at step 3500–5000 then fell to 0.7441 by step 6000, after a gradient-norm spike of 22.65. Best
+   checkpoint selection caught it. A pre-norm run would be the obvious comparison and is already set
+   up as the mastery pack's prediction experiment.
 
-## Queue after that
+## Queue
 
-1. M1.3 — synthetic date-normalisation seq2seq, train/val/test splits, checkpoint + resume, first
-   full EXPERIMENTS.md entry with a real run_id and metrics
-2. M1.5 — P1 project page: 14-step composition walkthrough, three explanation depths, attention-head
-   viewer, mask toggles, tensor inspector, in-browser demo with published parity tolerance
-3. M1.6 — P1 mastery pack + first back-explanation quiz
-4. P2 (GPT) — reuses P1's attention, adds tokenizer/checkpointing/sampling
+1. P1 mastery: run the day-0 back-explanation set, score it, record in the mastery ledger
+2. P2 (GPT): decoder-only, next-token training, resumable checkpointing, temperature/top-k sampling
+3. P3 (LoRA) — depends on P2's checkpoint
+4. P4 (DPO) — depends on P3's SFT arm
 
 ## Open questions (defaults assumed until answered)
 

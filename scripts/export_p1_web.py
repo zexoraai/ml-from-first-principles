@@ -119,11 +119,24 @@ def build_parity_fixture(model: Transformer, tok: CharTokenizer, sources: list[s
         })
     return {
         "tolerance": {
-            "encoder_output_abs": 2e-3,
-            "logits_abs": 5e-3,
-            "note": "float32 accumulation order differs between PyTorch's BLAS and a naive JS "
-                    "matmul, so exact equality is not expected. These bounds are loose enough for "
-                    "reordering and far tighter than any real logic error would produce.",
+            # Measured deviations on the first verified export (scripts/verify_js_parity.mjs,
+            # Node 24 on this CPU) were 5.26e-7 for the encoder and 3.58e-6 for the logits. The
+            # bounds below sit roughly 30-200x above that: tight enough that any real logic error
+            # fails immediately, loose enough to absorb float32 accumulation-order differences
+            # between PyTorch's BLAS and a naive JS matmul across browsers and CPU SIMD widths.
+            # The first version of this file used 2e-3 / 5e-3, which passed but was ~1000x looser
+            # than the truth and therefore not a meaningful check.
+            "encoder_output_abs": 1e-4,
+            "logits_abs": 1e-4,
+            "note": "exact equality is not expected: PyTorch's BLAS and a naive JS triple loop "
+                    "accumulate in different orders. Observed deviation on the reference export was "
+                    "5.3e-7 (encoder) and 3.6e-6 (logits), so these bounds carry a 30-200x margin.",
+            "measured_on_reference_export": {
+                "encoder_max_abs": 5.259e-7,
+                "logits_max_abs": 3.580e-6,
+                "harness": "scripts/verify_js_parity.mjs, Node 24, AMD Ryzen 5 PRO 5650U",
+                "all_cases_string_identical": True,
+            },
         },
         "cases": cases,
     }

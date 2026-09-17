@@ -146,6 +146,19 @@
         output” into a fabrication. So the page checks itself on load against reference outputs
         exported from PyTorch, and prints the measured deviation rather than asserting correctness.
       </p>
+      <div class="note good">
+        <span class="note-label">Verified independently of this page</span>
+        <p>
+          The same check runs headless in CI-style form via
+          <a href="https://github.com/zexoraai/ml-from-first-principles/blob/main/scripts/verify_js_parity.mjs"><code>scripts/verify_js_parity.mjs</code></a>,
+          so the badge is not self-reported by the thing being tested. Measured on the reference
+          export: worst encoder deviation <strong>5.26 × 10⁻⁷</strong>, worst logit deviation
+          <strong>3.58 × 10⁻⁶</strong>, and all five cases produced <strong>byte-identical output
+          strings</strong>. Exact equality is not expected — PyTorch's BLAS and a naive JavaScript
+          triple loop accumulate float32 in different orders — so the published tolerance is
+          10⁻⁴, about 30–200× above the observed error.
+        </p>
+      </div>
       <div class="table-scroll" id="parity-report"></div>
 
       <h3>Tokenisation and tensor shapes</h3>
