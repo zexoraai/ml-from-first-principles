@@ -34,6 +34,8 @@ tens of thousands.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -41,9 +43,10 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from .corpus import CORPORA, load_corpus
 from .tokenizer import ByteBPETokenizer
 
-__all__ = ["TINY_SHAKESPEARE_URL", "download_corpus", "prepare", "BatchSampler"]
+__all__ = ["TINY_SHAKESPEARE_URL", "download_corpus", "prepare", "BatchSampler", "CORPORA"]
 
 TINY_SHAKESPEARE_URL = (
     "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
@@ -70,45 +73,79 @@ def download_corpus(dest: Path, url: str = TINY_SHAKESPEARE_URL) -> str:
 def prepare(
     data_dir: str | Path = "data/p2",
     *,
+    corpus: str = "design",
     vocab_size: int = 1024,
     val_fraction: float = 0.1,
     verbose: bool = True,
 ) -> dict:
-    """Download, train the tokenizer, encode, and write train/val id arrays.
+    """Acquire the corpus, train the tokenizer, encode, and write train/val id arrays.
 
-    The tokenizer is trained on the **training portion only**. Training it on the whole corpus would
+    Args:
+        corpus: a key from `labs.p2_gpt.corpus.CORPORA`. Default `"design"`.
+
+    The tokenizer is trained on the **training portion only**. Fitting it on the whole corpus would
     leak: the merge list would be chosen partly from held-out text, so validation tokens would be
-    represented more efficiently than genuinely unseen text would be. The effect is small but it is
-    real, it is free to avoid, and avoiding it is the difference between a defensible split and one
-    that needs an apology.
+    represented more efficiently than genuinely unseen text. The effect is small, it is real, and it
+    is free to avoid.
+
+    The split is contiguous **per source** (see `CorpusSpec.split`). A full attribution record is
+    written to `attribution.json`, which is the licence artefact for the CC BY-SA portion.
     """
     data_dir = Path(data_dir)
-    text = download_corpus(data_dir / "input.txt")
+    data_dir.mkdir(parents=True, exist_ok=True)
 
-    split_at = int(len(text) * (1.0 - val_fraction))
-    train_text, val_text = text[:split_at], text[split_at:]
+    if verbose:
+        print(f"corpus: {corpus} — {CORPORA.get(corpus, 'unknown')}")
+    spec = load_corpus(corpus, data_dir, verbose=verbose)
+    if len(spec.text) < 10_000:
+        raise RuntimeError(
+            f"corpus {corpus!r} yielded only {len(spec.text)} characters — too small to train on. "
+            f"Check the network and the source list rather than proceeding."
+        )
 
-    tok_path = data_dir / f"tokenizer_{vocab_size}.json"
+    train_text, val_text = spec.split(val_fraction)
+
+    # Attribution is a deliverable, not a comment. Written every time so it cannot drift from the
+    # corpus actually used.
+    (data_dir / "attribution.json").write_text(
+        json.dumps(spec.manifest(), indent=2), encoding="utf-8"
+    )
+
+    # The cache key includes a hash of the ACTUAL training text, not just the corpus name.
+    #
+    # This is a real bug that already happened: an earlier run cached `tokenizer_design_1024.json`
+    # from a corpus that did not yet include the open textbook. Adding the textbook changed the
+    # training text but not the filename, so the next run silently reused merges learned from
+    # different data — while the manifest went on claiming the tokenizer was trained on this split.
+    # Nothing crashes; byte-level BPE never fails on unseen input, so the only symptom is slightly
+    # worse compression and a provenance claim that is false. Hashing the text makes the cache
+    # self-invalidating.
+    corpus_hash = hashlib.sha256(train_text.encode("utf-8")).hexdigest()[:12]
+    tok_path = data_dir / f"tokenizer_{corpus}_{vocab_size}_{corpus_hash}.json"
     if tok_path.exists():
         tok = ByteBPETokenizer.load(tok_path)
         if verbose:
-            print(f"loaded tokenizer from {tok_path} ({tok.vocab_size} tokens)")
+            print(f"  loaded tokenizer from {tok_path.name} ({tok.vocab_size} tokens)")
     else:
         if verbose:
-            print(f"training byte-level BPE to vocab {vocab_size} on the TRAIN split only…")
+            print(f"  training byte-level BPE to vocab {vocab_size} on the TRAIN split only…")
         tok = ByteBPETokenizer().train(train_text, vocab_size, verbose=verbose)
         tok.save(tok_path)
 
-    train_ids = np.array(tok.encode(train_text), dtype=np.uint16)
-    val_ids = np.array(tok.encode(val_text), dtype=np.uint16)
     if tok.vocab_size > 65535:
         raise ValueError("vocab exceeds uint16; widen the dtype before increasing vocab_size")
 
-    train_ids.tofile(data_dir / "train.bin")
-    val_ids.tofile(data_dir / "val.bin")
+    train_ids = np.array(tok.encode(train_text), dtype=np.uint16)
+    val_ids = np.array(tok.encode(val_text), dtype=np.uint16)
+    train_ids.tofile(data_dir / f"train_{corpus}.bin")
+    val_ids.tofile(data_dir / f"val_{corpus}.bin")
 
     stats = {
-        "corpus_chars": len(text),
+        "corpus": corpus,
+        "corpus_description": spec.description,
+        "n_sources": len(spec.sources),
+        "segments": [{"label": lbl, "chars": len(t)} for lbl, t in spec.segments],
+        "corpus_chars": len(spec.text),
         "train_chars": len(train_text),
         "val_chars": len(val_text),
         "train_tokens": int(train_ids.size),
@@ -117,14 +154,26 @@ def prepare(
         "n_merges": len(tok.merges),
         "compression_chars_per_token": len(train_text) / max(train_ids.size, 1),
         "tokenizer_path": str(tok_path),
-        "licence": "Shakespeare: public domain. Compilation: MIT (karpathy/char-rnn).",
-        "split": "contiguous 90/10 by character position; tokenizer trained on train only",
+        "train_text_sha256_12": corpus_hash,
+        "attribution_path": str(data_dir / "attribution.json"),
+        "licences": sorted({s["licence"] for s in spec.sources}),
+        "split": ("contiguous per-source split so every register appears in both train and val; "
+                  "tokenizer trained on the train portion only"),
     }
     if verbose:
+        print(f"  {stats['n_sources']} sources | {stats['corpus_chars']:,} chars")
         print(f"  train {stats['train_tokens']:,} tokens | val {stats['val_tokens']:,} tokens")
         print(f"  compression {stats['compression_chars_per_token']:.2f} chars/token")
-    return {"tokenizer": tok, "stats": stats,
-            "train_ids": train_ids, "val_ids": val_ids}
+        for lic in stats["licences"]:
+            print(f"  licence: {lic}")
+    # `train_text` / `val_text` are returned alongside the token arrays because Project 4 builds
+    # instruction and preference data out of the corpus's heading structure, which the flat uint16
+    # token array has thrown away. Returning the text costs nothing (it is already in memory) and
+    # keeps Project 4 reading the *same* split as Project 2 trained on -- re-splitting it separately
+    # would risk the two disagreeing and leaking val text into Project 4's training pairs.
+    return {"tokenizer": tok, "stats": stats, "spec": spec,
+            "train_ids": train_ids, "val_ids": val_ids,
+            "train_text": train_text, "val_text": val_text}
 
 
 class BatchSampler:

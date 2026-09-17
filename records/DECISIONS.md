@@ -201,6 +201,59 @@ and `.ps1` is blocked by execution policy).
 
 ---
 
+## D-009 — Cloud training is a planned second phase; everything must be built portable now
+**Date:** 2026-09-16 · **Status:** ACCEPTED (user-directed)
+
+**Context.** The user has stated the plan: finish all eight projects locally, then move to cloud GPUs
+for further training. That is a sequencing decision, not a change of scope, and it is authorised in
+principle — but no paid resource is provisioned until an actual cost estimate has been approved
+against a specific run.
+
+**What this changes about work done *before* the move.** The expensive failure mode is finishing
+eight CPU-shaped projects and then rewriting all of them to run on a GPU. Avoiding that costs almost
+nothing if it is done as we go, so it is done as we go:
+
+1. **Device-agnostic by construction.** No `.cpu()` in model or training code; a single `--device`
+   argument resolved once and threaded through. Tensors are created on the parameter's device rather
+   than defaulted. `torch.cuda.is_available()` is checked in exactly one place. Already largely true
+   because the environment forced it (`cuda_available = False` everywhere), which turns out to have
+   been useful discipline rather than a limitation.
+2. **Checkpoints are portable.** Saved from CPU tensors and loaded with `map_location`, so a
+   CPU-trained checkpoint resumes on a GPU and vice versa. Already the case; now it is a requirement
+   rather than an accident, and the resume test is what protects it.
+3. **Scale lives in CLI flags and config files, never in constants.** Every run directory already
+   contains the exact `argv` and a config dict. Moving to a larger model must be a different
+   command, not a different codebase. `GPTConfig.gpt2_small()` exists precisely so the 124 M target
+   is a config change.
+4. **Mixed precision is a hook, not a rewrite.** Training loops keep the loss scaling and autocast
+   insertion points obvious and unused on CPU, so enabling bf16/fp16 on a GPU is a flag rather than
+   surgery.
+5. **Dependencies are split by target.** `requirements.txt` pins the **CPU** wheel index because a
+   CUDA build cannot run here and would cost ~2 GB against a 31 GB disk. A sibling
+   `requirements-cuda.txt` is added when the move happens, pinning the same library versions against
+   the CUDA index so results stay comparable.
+
+**What the move unlocks, and what it must not be allowed to obscure.**
+
+| Currently blocked | Unblocked by cloud | Must still be labelled |
+|---|---|---|
+| P5's Triton kernel cannot be compiled or benchmarked (D-004, G-001) | Executes and gets real timings | The GPU model, driver and Triton version; timings never attributed to this laptop |
+| P2's ~124 M target is a documented estimate only (D-007c) | Becomes attemptable | Any result is a *new* run with its own record; the small-model results are not retroactively upgraded |
+| P6 low-bit **compute** speedup is unlikely on this CPU | Measurable on a GPU | Simulated vs packed-storage vs genuine low-bit compute stay three distinct claims |
+| P7/P8 are wall-clock-bound at 3–6 h each | Hours instead | Reduced-scale results already published are not relabelled as reproductions |
+
+**The rule that does not change.** Moving to more compute changes what we can *attempt*; it does not
+change the fidelity tiers in SCOPE.md §0. A tier-R result trained on a rented A100 is still tier R
+unless it matches a published result at published scale. Cloud access is not a licence to upgrade
+existing claims.
+
+**Consequence for cost estimates.** Every project's page and `env/feasibility.md` already carries a
+*measured* local throughput figure. Those become the basis for honest GPU estimates by ratio rather
+than by guesswork, so the user gets a real number before any card is charged. `estimate_flops_per_token`
+on the GPT exists for exactly this.
+
+---
+
 ## D-007 — Deferred decisions (do not guess these; measure first)
 **Status:** OPEN
 

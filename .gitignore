@@ -35,6 +35,14 @@ __pycache__/
 /dps.txt
 /vcheck.txt
 /v[0-9].txt
+# Per-project scratch logs: p2d.txt, p4all.txt, p4s3.txt, c3.txt, cp2.txt, tb2.txt and friends.
+# Enumerating exact names proved brittle as the project count grew, so these are prefix patterns.
+/p[0-9]*.txt
+/c[0-9]*.txt
+/cp*.txt
+/tb*.txt
+/out*.txt
+/jsp*.txt
 
 # Datasets: never committed. Each project documents how to regenerate/download.
 data/

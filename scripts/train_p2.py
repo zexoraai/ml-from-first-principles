@@ -125,6 +125,26 @@ def pip_freeze() -> list[str]:
         return ["UNKNOWN"]
 
 
+# Prompts used for the samples recorded into result.json. Chosen per corpus so the recorded output
+# demonstrates conditioning on a topic rather than only unconditioned generation -- an unconditioned
+# sample from a small model looks worse than the model actually is when prompted.
+PROBE_PROMPTS: dict[str, list[str]] = {
+    "design": [
+        "# Typography\n\n",
+        "# Grid (graphic design)\n\n",
+        "The choice of typeface ",
+        "## Color theory\n\nA complementary ",
+    ],
+    "design_pd": [
+        "The choice of type ", "A well-set page ", "The printer who ",
+    ],
+    "design_wiki": [
+        "# Typography\n\n", "# Bauhaus\n\n", "# Color theory\n\n",
+    ],
+    "shakespeare": ["\n", "ROMEO:\n"],
+}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-name", default=None)
@@ -136,6 +156,8 @@ def main() -> None:
     ap.add_argument("--n-head", type=int, default=6)
     ap.add_argument("--d-model", type=int, default=192)
     ap.add_argument("--dropout", type=float, default=0.1)
+    ap.add_argument("--corpus", default="design",
+                    help="design | design_pd | design_wiki | shakespeare")
     ap.add_argument("--vocab-size", type=int, default=1024)
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--min-lr", type=float, default=1e-4)
@@ -161,7 +183,7 @@ def main() -> None:
     run_dir.mkdir(parents=True, exist_ok=True)
 
     # ---- data --------------------------------------------------------------------------------
-    bundle = prepare(vocab_size=args.vocab_size, verbose=True)
+    bundle = prepare(corpus=args.corpus, vocab_size=args.vocab_size, verbose=True)
     tok, stats = bundle["tokenizer"], bundle["stats"]
     sampler = BatchSampler(
         bundle["train_ids"], bundle["val_ids"],
@@ -196,6 +218,7 @@ def main() -> None:
 
     tokens_per_step = args.batch_size * args.block_size * args.grad_accum
     flops = model.estimate_flops_per_token()
+    sample_prompt = PROBE_PROMPTS.get(args.corpus, ["\n"])[0]
 
     meta = {
         "run_id": run_name,
@@ -302,7 +325,7 @@ def main() -> None:
 
         if args.sample_every and step % args.sample_every == 0:
             model.eval()
-            prompt = torch.tensor([tok.encode("\n")], dtype=torch.long)
+            prompt = torch.tensor([tok.encode(sample_prompt)], dtype=torch.long)
             out = generate(model, prompt, 120, temperature=0.8, top_k=40,
                            generator=torch.Generator().manual_seed(0))
             print("  sample: " + tok.decode(out[0].tolist()).replace("\n", " | ")[:220])
@@ -319,10 +342,18 @@ def main() -> None:
     model.eval()
     samples = []
     for temp, k in ((0.5, 40), (0.8, 40), (1.0, 200), (1.2, 0)):
-        prompt = torch.tensor([tok.encode("\n")], dtype=torch.long)
+        prompt = torch.tensor([tok.encode(sample_prompt)], dtype=torch.long)
         out = generate(model, prompt, 240, temperature=temp, top_k=k or None,
                        generator=torch.Generator().manual_seed(1234))
-        samples.append({"temperature": temp, "top_k": k or None,
+        samples.append({"temperature": temp, "top_k": k or None, "prompt": sample_prompt,
+                        "text": tok.decode(out[0].tolist())})
+    # A second set from a domain-specific prompt, so the recorded samples show conditioning working
+    # rather than only unconditioned rambling.
+    for prompt_text in PROBE_PROMPTS.get(args.corpus, []):
+        prompt = torch.tensor([tok.encode(prompt_text)], dtype=torch.long)
+        out = generate(model, prompt, 200, temperature=0.8, top_k=40,
+                       generator=torch.Generator().manual_seed(99))
+        samples.append({"temperature": 0.8, "top_k": 40, "prompt": prompt_text,
                         "text": tok.decode(out[0].tolist())})
 
     result = {
